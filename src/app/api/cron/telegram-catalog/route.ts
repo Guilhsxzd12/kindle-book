@@ -9,6 +9,8 @@ export async function GET(request:NextRequest){
   if(secret&&auth!==`Bearer ${secret}`)return NextResponse.json({ok:false},{status:401});
   const hour=Number(new Intl.DateTimeFormat("en-US",{timeZone:"America/Sao_Paulo",hour:"2-digit",hour12:false}).format(new Date()));
   if(hour<6||hour>23)return NextResponse.json({ok:true,skipped:"outside-window"});
+  const requestedLimit=Number(request.nextUrl.searchParams.get("limit")||"20");
+  const batchSize=Number.isFinite(requestedLimit)?Math.max(1,Math.min(20,Math.floor(requestedLimit))):20;
   const db=createAdminSupabaseClient();
   const {data:channels}=await db.from("telegram_channels").select("id").eq("active",true);
   if(!channels?.length)return NextResponse.json({ok:false,error:"no-active-channels"},{status:409});
@@ -17,7 +19,7 @@ export async function GET(request:NextRequest){
   const {data:pubs}=await db.from("telegram_channel_publications").select("book_id,channel_id,epub_message_id,pdf_message_id,status");
   const done=new Map<string,Set<string>>();
   for(const p of pubs||[]){if(p.status==="sent"){const s=done.get(p.book_id)||new Set<string>();s.add(p.channel_id);done.set(p.book_id,s);}}
-  const pending=(books||[]).filter(b=>(done.get(b.id)?.size||0)<channels.length).slice(0,20);
+  const pending=(books||[]).filter(b=>(done.get(b.id)?.size||0)<channels.length).slice(0,batchSize);
   const results=[];for(const book of pending){try{results.push(await publishBookToTelegramChannels(book.id,false));}catch(error){results.push({book:{id:book.id,title:book.title},error:error instanceof Error?error.message:"Falha"});}}
   return NextResponse.json({ok:true,processed:pending.length,results});
 }
