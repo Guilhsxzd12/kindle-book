@@ -31,7 +31,7 @@ function bookPdf(book:any){
 }
 
 export function telegramChannelWelcomeText(){
-  return `📚 <b>Kindle Books conectado!</b>\n\nEste canal foi reconhecido pelo bot e está pronto para receber os novos livros publicados no acervo.\n\n📚 Os canais recebem somente livros em português.\n📱 EPUB para Kindle e aplicativos compatíveis.\n📄 PDF para celular, tablet ou computador.\n\n🌐 <a href="${PUBLIC_SITE_URL}/biblioteca">Acessar o Kindle Books</a>\n\nBoa leitura! 🤍`;
+  return `📚 <b>Kindle Books conectado!</b>\n\nEste canal foi reconhecido pelo bot e está pronto para receber os novos livros publicados no acervo.\n\n📚 Os canais recebem os livros disponíveis no acervo.\n📱 EPUB para Kindle e aplicativos compatíveis.\n📄 PDF para celular, tablet ou computador.\n\n🌐 <a href="${PUBLIC_SITE_URL}/biblioteca">Acessar o Kindle Books</a>\n\nBoa leitura! 🤍`;
 }
 
 async function nextRole(title:string):Promise<ChannelRole|null>{
@@ -114,7 +114,34 @@ export async function publishBookToTelegramChannels(bookId:string,force=false){
       continue;
     }
 
-    await db.from("telegram_channel_publications").upsert({book_id:book.id,channel_id:channel.id,status:"pending",last_error:null,updated_at:new Date().toISOString()},{onConflict:"book_id,channel_id"});
+    const claimTime=new Date().toISOString();
+    const pendingIsFresh=previous?.status==="pending"&&previous?.updated_at&&Date.now()-new Date(previous.updated_at).getTime()<10*60*1000;
+    if(pendingIsFresh){
+      results.push({channel:channel.title||String(channel.chat_id),role:channel.role,status:"already-processing"});
+      continue;
+    }
+    if(previous){
+      let claim=db.from("telegram_channel_publications")
+        .update({status:"pending",last_error:null,updated_at:claimTime})
+        .eq("id",previous.id);
+      if(previous.updated_at)claim=claim.eq("updated_at",previous.updated_at);
+      const {data:claimed,error:claimError}=await claim.select("id").maybeSingle();
+      if(claimError)throw new Error(claimError.message);
+      if(!claimed){
+        results.push({channel:channel.title||String(channel.chat_id),role:channel.role,status:"already-processing"});
+        continue;
+      }
+    }else{
+      const {error:claimError}=await db.from("telegram_channel_publications")
+        .insert({book_id:book.id,channel_id:channel.id,status:"pending",last_error:null,updated_at:claimTime});
+      if(claimError){
+        if(claimError.code==="23505"){
+          results.push({channel:channel.title||String(channel.chat_id),role:channel.role,status:"already-processing"});
+          continue;
+        }
+        throw new Error(claimError.message);
+      }
+    }
     let textMessageId:number|null=force?null:(previous?.text_message_id||null);
     let epubMessageId:number|null=force?null:(previous?.epub_message_id||null);
     let pdfMessageId:number|null=force?null:(previous?.pdf_message_id||null);
