@@ -59,7 +59,7 @@ export async function AppShell({children,allowInactive=false}:{children:React.Re
         <form className="header-search store-search capsule-search" action="/biblioteca" method="get"><Icon name="search"/><input name="q" placeholder="Livro ou autor..." aria-label="Pesquisar livros"/><button type="submit">Buscar</button></form>
         <Link className="header-request-btn capsule-request" href="/pedido"><Icon name="request"/>Pedir livro</Link>
         <AccountMenu fullName={profile.full_name} email={profile.email} username={profile.username}/>
-        <Link className="mobile-header-request" href="/pedido" aria-label="Pedir livro"><Icon name="request"/></Link>
+        <Link className="mobile-header-request" href="/pedido" aria-label="Pedir livro"><Icon name="request"/><span>PEDIR LIVRO</span></Link>
 
         <details className="capsule-mobile-menu">
           <summary aria-label="Abrir menu"><Icon name="menu"/></summary>
