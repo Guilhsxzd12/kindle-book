@@ -1,0 +1,4 @@
+supabase==2.18.1
+requests==2.32.5
+EbookLib==0.19
+PyMuPDF==1.26.4
