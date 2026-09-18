@@ -15,7 +15,7 @@ function Icon({name}:{name:"search"|"request"|"chevron"|"menu"}){
   return <svg {...common}><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>;
 }
 
-function WhatsAppIcon(){return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="11.5" r="7.6" fill="none" stroke="currentColor" strokeWidth="1.8"/><path d="M6.1 17.4 5 21l3.6-1.1" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M9 8.3c.3-.3.7-.2.9.1l1 1.7c.2.3.1.6-.1.8l-.6.6c.7 1.4 1.8 2.5 3.3 3.2l.6-.7c.2-.2.5-.3.8-.1l1.7.9c.3.2.4.6.2.9-.5.8-1.4 1.3-2.3 1.2-3.8-.4-6.8-3.4-7.3-7.2-.1-.6.3-1.1.8-1.4Z" fill="currentColor"/></svg>}
+function WhatsAppIcon(){return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 11.8a8.4 8.4 0 0 1-12.4 7.4L4 20.3l1.1-4A8.4 8.4 0 1 1 20.5 11.8Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M8.7 7.8c.3-.3.7-.2.9.1l1 1.7c.2.3.1.6-.1.8l-.6.6c.7 1.4 1.8 2.5 3.3 3.2l.6-.7c.2-.2.5-.3.8-.1l1.7.9c.3.2.4.6.2.9-.5.8-1.4 1.3-2.3 1.2-3.8-.4-6.8-3.4-7.3-7.2-.1-.6.3-1.1.8-1.4Z" fill="currentColor"/></svg>}
 function TelegramIcon(){return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 4 9.6 15.1M21 4l-6.2 16-5.2-4.9L5.9 18l1.2-5.4L3 10.9 21 4Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
 
 export async function AppShell({children,allowInactive=false}:{children:React.ReactNode;allowInactive?:boolean}){
@@ -59,6 +59,7 @@ export async function AppShell({children,allowInactive=false}:{children:React.Re
         <form className="header-search store-search capsule-search" action="/biblioteca" method="get"><Icon name="search"/><input name="q" placeholder="Livro ou autor..." aria-label="Pesquisar livros"/><button type="submit">Buscar</button></form>
         <Link className="header-request-btn capsule-request" href="/pedido"><Icon name="request"/>Pedir livro</Link>
         <AccountMenu fullName={profile.full_name} email={profile.email} username={profile.username}/>
+        <Link className="mobile-header-request" href="/pedido" aria-label="Pedir livro"><Icon name="request"/></Link>
 
         <details className="capsule-mobile-menu">
           <summary aria-label="Abrir menu"><Icon name="menu"/></summary>
@@ -71,7 +72,6 @@ export async function AppShell({children,allowInactive=false}:{children:React.Re
               <Link href="/biblioteca#novidades">Novidades</Link>
               <Link href="/favoritos">Favoritos</Link>
               <Link href="/ajuda">Ajuda</Link>
-              <Link href="/minha-conta">Minha conta</Link>
               {admin&&<Link href="/admin">Admin</Link>}
               <Link className="mobile-request-link" href="/pedido"><Icon name="request"/>Pedir livro</Link>
             </nav>
