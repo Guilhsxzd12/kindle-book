@@ -159,3 +159,4 @@ export async function resendWelcomeToTelegramChannels(){
   if(error)throw new Error(error.message);if(!channels?.length)throw new Error("Nenhum canal detectado.");
   const results=[];for(const channel of channels){const message=await sendTelegramMessage(channel.chat_id,telegramChannelWelcomeText());await db.from("telegram_channels").update({welcome_sent_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("id",channel.id);results.push({id:channel.id,title:channel.title,role:channel.role,messageId:extractMessageId(message)});}return results;
 }
+
