@@ -39,7 +39,7 @@ export default async function ConhecimentoPage(){
     admin.from("books").select("id",{count:"exact",head:true}).eq("published",true).like("cover_url","/api/covers/%"),
     admin.from("books").select("id",{count:"exact",head:true}).eq("published",true).eq("knowledge_status","manual"),
     admin.from("knowledge_runs").select("id,started_at,finished_at,selected_count,matched_count,completed_count,error_count,status,note").order("id",{ascending:false}).limit(6),
-    admin.from("books").select("id,title,author,cover_url,language,year,knowledge_confidence,knowledge_status,updated_at").eq("published",true).eq("metadata_reviewed",true).not("cover_url","is",null).not("cover_url","like","/api/covers/%").order("updated_at",{ascending:false}).limit(10)
+    admin.from("books").select("id,title,author,cover_url,language,year,knowledge_confidence,knowledge_status,updated_at").eq("published",true).eq("metadata_reviewed",true).not("cover_url","is",null).not("cover_url","like","/api/covers/%").order("updated_at",{ascending:false}).limit(50)
   ]);
 
   const totalKnowledge=knowledgeCount.count||0;
@@ -98,7 +98,7 @@ export default async function ConhecimentoPage(){
       </section>
 
       <section className={styles.section}>
-        <div className={styles.sectionHead}><div><h2>Livros revisados recentemente</h2><p>Aqui só aparecem livros marcados como revisados e com capa fora do proxy antigo. Clique para conferir o registro completo.</p></div><span className={styles.badge}>{reviewed.toLocaleString("pt-BR")} revisados válidos</span></div>
+        <div className={styles.sectionHead}><div><h2>Concluídos em tempo real</h2><p>Cada livro aparece aqui assim que for marcado como metadata_reviewed=true. Os mais recentes ficam no topo; clique para conferir o registro completo.</p></div><span className={styles.badge}>{reviewed.toLocaleString("pt-BR")} concluídos</span></div>
         <div className={styles.knowledgeList}>{recentReviewed.data?.length?recentReviewed.data.map(item=><Link className={styles.knowledgeLink} href={`/livro/${item.id}`} key={item.id} target="_blank"><article className={styles.knowledgeRow}>{item.cover_url?<img className={styles.cover} src={item.cover_url} alt={`Capa de ${item.title}`}/>:<span className={styles.coverFallback}>{String(item.title||"?").slice(0,1).toUpperCase()}</span>}<div><strong>{item.title}</strong><small>{item.author||"Autor não identificado"}{item.year?` • ${item.year}`:""}{item.language?` • ${String(item.language).toUpperCase()}`:""} • atualizado {fmt(item.updated_at)}</small></div><span className={styles.openBook}>{item.knowledge_confidence?`${item.knowledge_confidence}% · `:""}abrir ↗</span></article></Link>):<div className={styles.empty}>Ainda não há livros revisados válidos para mostrar.</div>}</div>
       </section>
     </div>
