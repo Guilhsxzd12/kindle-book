@@ -73,7 +73,6 @@ export async function AppShell({children,allowInactive=false}:{children:React.Re
               <Link href="/favoritos">Favoritos</Link>
               <Link href="/ajuda">Ajuda</Link>
               {admin&&<Link href="/admin">Admin</Link>}
-              <Link className="mobile-request-link" href="/pedido"><Icon name="request"/>Pedir livro</Link>
             </nav>
           </div>
         </details>
