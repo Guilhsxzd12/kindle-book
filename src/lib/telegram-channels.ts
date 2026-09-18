@@ -95,7 +95,6 @@ export async function publishBookToTelegramChannels(bookId:string,force=false){
   if(bookError||!book)throw new Error(bookError?.message||"Livro não encontrado.");
   if(channelError)throw new Error(channelError.message);
   if(!channels?.length)throw new Error("Os canais do Telegram ainda não foram detectados pelo bot.");
-  if(!isPortuguese(book.language))throw new Error("Somente livros em português são enviados automaticamente aos canais do Telegram. As outras versões ficam disponíveis no site e no bot sob demanda.");
 
   const epub=bookEpub(book);const pdf=bookPdf(book);
   if(!epub.id&&!pdf.id)throw new Error("O livro não possui EPUB ou PDF disponível para o Telegram.");
