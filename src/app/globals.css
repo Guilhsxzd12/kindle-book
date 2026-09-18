@@ -34,3 +34,8 @@
  .category-admin-grid{grid-template-columns:1fr}
  .admin-page .page-head{align-items:flex-start}
 }
+
+@media(max-width:820px){
+ .mobile-header-request{width:auto;min-width:116px;padding:0 13px;gap:7px;font-size:12px;font-weight:800;letter-spacing:.02em;white-space:nowrap}
+ .mobile-header-request span{display:inline}
+}
