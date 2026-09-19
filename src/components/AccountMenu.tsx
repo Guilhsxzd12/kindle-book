@@ -19,8 +19,8 @@ export function AccountMenu({fullName,email,username}:AccountMenuProps){
   return <details className="account-menu">
     <summary aria-label="Minha conta" title="Minha conta"><UserIcon/></summary>
     <div className="account-menu-panel">
-      <div className="account-menu-identity"><span className="account-avatar"><UserIcon/></span><div><strong>{fullName||username||"Minha conta"}</strong>{email&&<small>{email}</small>}{username&&<small>@{username}</small>}</div></div>
-      <Link className="account-menu-link" href="/minha-conta"><SettingsIcon/><span><strong>Minha conta</strong><small>Alterar e-mail, usuário e senha</small></span></Link>
+      <div className="account-menu-identity"><span className="account-avatar"><UserIcon/></span><div><strong>{username?`@${username}`:fullName||"Minha conta"}</strong>{fullName&&fullName!==username&&<small>{fullName}</small>}</div></div>
+      <Link className="account-menu-link" href="/minha-conta"><SettingsIcon/><span><strong>Minha conta</strong><small>Alterar usuário e senha</small></span></Link>
       <button type="button" className="account-menu-link account-menu-logout" onClick={signOut}><LogoutIcon/><span><strong>Sair</strong><small>Encerrar sessão neste dispositivo</small></span></button>
     </div>
   </details>;
