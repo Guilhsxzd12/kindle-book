@@ -1,5 +1,5 @@
 import "server-only";
-import { createHash,randomBytes } from "node:crypto";
+import { createHash,randomInt } from "node:crypto";
 
 export type InvitePlan="monthly"|"lifetime";
 
@@ -12,8 +12,7 @@ export function hashInviteCode(value:string){
 }
 
 export function generateInviteCode(){
-  const raw=randomBytes(16).toString("hex").toUpperCase();
-  return raw.match(/.{1,8}/g)?.join("-")||raw;
+  return String(randomInt(100000,1000000));
 }
 
 export function inviteRegistrationUrl(code:string){

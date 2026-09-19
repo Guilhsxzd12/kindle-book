@@ -1,6 +1,7 @@
 import { NextRequest,NextResponse } from "next/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getSubscriptionState } from "@/lib/subscription";
 
 export async function POST(request:NextRequest){
   try{
@@ -20,6 +21,19 @@ export async function POST(request:NextRequest){
     const supabase=await createServerSupabaseClient();
     const {data,error}=await supabase.auth.signInWithPassword({email,password});
     if(error||!data.user)return NextResponse.json({error:"Usuário ou senha incorretos."},{status:401});
+
+    const admin=createAdminSupabaseClient();
+    const {data:profile}=await admin.from("profiles").select("role").eq("id",data.user.id).maybeSingle();
+    if(profile?.role!=="admin"){
+      const subscription=await getSubscriptionState(data.user.id);
+      if(!subscription.isActive){
+        await supabase.auth.signOut({scope:"local"});
+        const message=subscription.status==="canceled"
+          ?"Seu acesso está bloqueado. Renove sua assinatura para entrar novamente."
+          :"Seu acesso mensal expirou. Renove sua assinatura para entrar novamente.";
+        return NextResponse.json({error:message,expired:true},{status:403});
+      }
+    }
     return NextResponse.json({ok:true});
   }catch{
     return NextResponse.json({error:"Não foi possível entrar agora."},{status:500});

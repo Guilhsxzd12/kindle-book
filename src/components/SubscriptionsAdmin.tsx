@@ -3,7 +3,7 @@ import { useEffect,useMemo,useState } from "react";
 
 type Row={
   profile:{id:string;email:string|null;full_name:string|null;username:string|null;approved:boolean;role:string};
-  subscription:{status:string;active_until:string|null;activated_at:string|null;note:string|null}|null;
+  subscription:{status:string;plan_type:"monthly"|"lifetime";active_until:string|null;activated_at:string|null;note:string|null}|null;
   telegram:{telegram_user_id:number;username:string|null;first_name:string|null;linked_at:string}|null;
 };
 type Channel={id:string;chat_id:number;title:string|null;role:"official"|"reserve";active:boolean;welcome_sent_at:string|null;updated_at:string};
@@ -12,7 +12,8 @@ type EditDraft={fullName:string;email:string;username:string;password:string};
 
 function date(value?:string|null){if(!value)return "—";return new Intl.DateTimeFormat("pt-BR",{dateStyle:"short"}).format(new Date(value));}
 function dateTime(value?:number){if(!value)return "";return new Intl.DateTimeFormat("pt-BR",{dateStyle:"short",timeStyle:"short"}).format(new Date(value*1000));}
-function isActive(row:Row){return row.subscription?.status==="active"&&!!row.subscription.active_until&&new Date(row.subscription.active_until).getTime()>Date.now();}
+function isLifetime(row:Row){return row.subscription?.plan_type==="lifetime";}
+function isActive(row:Row){return row.subscription?.status==="active"&&(isLifetime(row)||!!row.subscription.active_until&&new Date(row.subscription.active_until).getTime()>Date.now());}
 
 export function SubscriptionsAdmin(){
   const [rows,setRows]=useState<Row[]>([]);const [loading,setLoading]=useState(true);const [busy,setBusy]=useState<string|null>(null);const [search,setSearch]=useState("");const [message,setMessage]=useState("");
@@ -34,8 +35,8 @@ export function SubscriptionsAdmin(){
   const filtered=useMemo(()=>{const q=search.trim().toLowerCase().replace(/^@/,"");if(!q)return rows;return rows.filter(r=>[r.profile.full_name,r.profile.email,r.profile.username,r.telegram?.username,r.telegram?.first_name].some(v=>String(v||"").toLowerCase().includes(q)));},[rows,search]);
   const official=channels.find(channel=>channel.role==="official");const reserve=channels.find(channel=>channel.role==="reserve");
 
-  async function change(userId:string,action:"renew"|"cancel"){
-    setBusy(userId);setMessage("");try{const r=await fetch("/api/admin/subscriptions",{method:"PATCH",headers:{"content-type":"application/json"},body:JSON.stringify({userId,action})});const d=await r.json();if(!r.ok)throw new Error(d.error||"Não foi possível atualizar.");setMessage(action==="renew"?"Assinatura renovada: +30 dias adicionados ao período atual.":"Assinatura cancelada.");await load();}catch(e){setMessage(e instanceof Error?e.message:"Erro ao atualizar.");}finally{setBusy(null);}
+  async function change(userId:string,action:"renew"|"lifetime"|"cancel"){
+    setBusy(userId);setMessage("");try{const r=await fetch("/api/admin/subscriptions",{method:"PATCH",headers:{"content-type":"application/json"},body:JSON.stringify({userId,action})});const d=await r.json();if(!r.ok)throw new Error(d.error||"Não foi possível atualizar.");setMessage(action==="renew"?"Assinatura mensal renovada: +30 dias adicionados ao período atual.":action==="lifetime"?"Acesso vitalício liberado.":"Assinatura cancelada.");await load();}catch(e){setMessage(e instanceof Error?e.message:"Erro ao atualizar.");}finally{setBusy(null);}
   }
   async function setupBot(){setBotBusy(true);setMessage("");try{const r=await fetch("/api/telegram/setup",{method:"POST"});const d=await r.json();if(!r.ok)throw new Error(d.error||"Falha ao ativar bot.");setBot(d.bot||null);setWebhook(d.webhookInfo||null);setBotHealthy(Boolean(d.healthy));setMessage(`Bot @${d.bot?.username||"Telegram"} conectado ao site por webhook. Ele continua recebendo eventos mesmo com o site fechado.`);await loadTelegram();}catch(e){setMessage(e instanceof Error?e.message:"Erro ao ativar bot.");}finally{setBotBusy(false);}}
   async function registerChannel(){
@@ -92,10 +93,10 @@ export function SubscriptionsAdmin(){
     {message&&<div className={`notice ${/sucesso|renovada|conectado|reconhecido|enviada/i.test(message)?"success":""}`}>{message}</div>}
 
     <section className="card panel subscriptions-panel">
-      <div className="subscriptions-head"><div><span className="eyebrow">ACESSOS</span><h2>Assinaturas e logins</h2><p className="muted">Renove por mais 30 dias, cancele, altere e-mail/usuário/senha ou remova uma conta.</p></div><label className="subscription-search">Buscar usuário<input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Nome, e-mail, usuário ou @telegram"/></label></div>
-      {loading?<p className="muted">Carregando...</p>:<div className="subscription-list">{filtered.length?filtered.map(row=>{const active=isActive(row);return <article className="subscription-user-card" key={row.profile.id}>
-        <div className="subscription-user-info"><strong>{row.profile.full_name||row.profile.email||"Usuário"}</strong><div className="meta">{row.profile.email||"sem e-mail"}{row.profile.username?` • usuário: ${row.profile.username}`:""}</div><div className="meta">{row.telegram?`Telegram: @${row.telegram.username||row.telegram.first_name||row.telegram.telegram_user_id}`:"Telegram não vinculado"}</div><div className={`subscription-state ${active?"active":"inactive"}`}>{active?`✅ Ativa • vence ${date(row.subscription?.active_until)}`:row.subscription?.status==="canceled"?"⛔ Cancelada":"⚪ Inativa"} • {row.profile.approved?"conta aprovada":"conta aguardando"}</div></div>
-        <div className="subscription-user-actions"><button className="btn" disabled={busy===row.profile.id} onClick={()=>change(row.profile.id,"renew")}>{active?"Renovar +30 dias":"Liberar 30 dias"}</button><button className="btn ghost" disabled={busy===row.profile.id} onClick={()=>openEdit(row)}>Editar login</button><button className="btn danger" disabled={busy===row.profile.id||!active} onClick={()=>change(row.profile.id,"cancel")}>Cancelar</button><button className="btn danger ghost-danger" disabled={busy===row.profile.id} onClick={()=>removeUser(row)}>Remover</button></div>
+      <div className="subscriptions-head"><div><span className="eyebrow">ACESSOS</span><h2>Assinaturas e logins</h2><p className="muted">Libere 30 dias, torne o acesso vitalício, bloqueie uma assinatura ou remova uma conta.</p></div><label className="subscription-search">Buscar usuário<input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Nome, e-mail, usuário ou @telegram"/></label></div>
+      {loading?<p className="muted">Carregando...</p>:<div className="subscription-list">{filtered.length?filtered.map(row=>{const active=isActive(row);const lifetime=isLifetime(row);const expired=row.subscription?.status==="active"&&!active&&!lifetime;return <article className="subscription-user-card" key={row.profile.id}>
+        <div className="subscription-user-info"><strong>{row.profile.full_name||row.profile.email||"Usuário"}</strong><div className="meta">{row.profile.email||"sem e-mail"}{row.profile.username?` • usuário: ${row.profile.username}`:""}</div><div className="meta">{row.telegram?`Telegram: @${row.telegram.username||row.telegram.first_name||row.telegram.telegram_user_id}`:"Telegram não vinculado"}</div><div className={`subscription-state ${active?"active":"inactive"}`}>{active?(lifetime?"♾️ Vitalício":`✅ Mensal • vence ${date(row.subscription?.active_until)}`):expired?`⏰ Mensal expirada • venceu ${date(row.subscription?.active_until)}`:row.subscription?.status==="canceled"?"⛔ Bloqueada":"⚪ Inativa"} • {row.profile.approved?"conta cadastrada":"conta aguardando"}</div></div>
+        <div className="subscription-user-actions"><button className="btn" disabled={busy===row.profile.id||(active&&lifetime)} onClick={()=>change(row.profile.id,"renew")}>{active&&!lifetime?"Renovar +30 dias":"Liberar 30 dias"}</button><button className="btn" disabled={busy===row.profile.id||(active&&lifetime)} onClick={()=>change(row.profile.id,"lifetime")}>{active&&lifetime?"Vitalício ativo":"Tornar vitalício"}</button><button className="btn ghost" disabled={busy===row.profile.id} onClick={()=>openEdit(row)}>Editar login</button><button className="btn danger" disabled={busy===row.profile.id||!active} onClick={()=>change(row.profile.id,"cancel")}>Bloquear</button><button className="btn danger ghost-danger" disabled={busy===row.profile.id} onClick={()=>removeUser(row)}>Remover</button></div>
       </article>}):<p className="muted">Nenhum usuário encontrado.</p>}</div>}
     </section>
 

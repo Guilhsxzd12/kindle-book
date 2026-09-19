@@ -14,7 +14,9 @@ export async function POST(request:NextRequest){
     const username=String(body.username||"").trim().toLowerCase();
     const password=String(body.password||"");
 
-    if(normalizedCode.length<24)return NextResponse.json({error:"Código inválido."},{status:400});
+    const validShortCode=/^\d{6}$/.test(normalizedCode);
+    const validLegacyCode=/^[A-F0-9]{32}$/.test(normalizedCode);
+    if(!validShortCode&&!validLegacyCode)return NextResponse.json({error:"Código inválido."},{status:400});
     if(!validUsername(username))return NextResponse.json({error:"Use de 3 a 24 caracteres no usuário: letras minúsculas, números, ponto, hífen ou underline."},{status:400});
     if(password.length<8)return NextResponse.json({error:"A senha precisa ter pelo menos 8 caracteres."},{status:400});
 
@@ -46,7 +48,7 @@ export async function POST(request:NextRequest){
 
       const lifetime=invite.plan_type==="lifetime";
       const activeUntil=lifetime?"9999-12-31T23:59:59.999Z":new Date(Date.now()+30*86400000).toISOString();
-      const {error:subscriptionError}=await admin.from("subscriptions").upsert({user_id:createdUserId,status:"active",active_until:activeUntil,activated_at:now,activated_by:invite.created_by,note:lifetime?"Acesso vitalício criado por código de usuário":"Acesso mensal criado por código de usuário",updated_at:now},{onConflict:"user_id"});
+      const {error:subscriptionError}=await admin.from("subscriptions").upsert({user_id:createdUserId,status:"active",active_until:activeUntil,activated_at:now,activated_by:invite.created_by,note:lifetime?"Acesso vitalício criado por código de usuário":"Acesso mensal criado por código de usuário",plan_type:lifetime?"lifetime":"monthly",updated_at:now},{onConflict:"user_id"});
       if(subscriptionError)throw subscriptionError;
 
       const {error:finishError}=await admin.from("user_invite_codes").update({used_by:createdUserId}).eq("code_hash",codeHash).eq("used_at",now);

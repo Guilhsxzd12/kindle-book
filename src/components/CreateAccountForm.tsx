@@ -29,7 +29,7 @@ export function CreateAccountForm({initialCode=""}:{initialCode?:string}){
     <section className="oda-login-card">
       <div className="oda-login-intro"><span className="eyebrow">NOVO ACESSO</span><h1>Crie seu usuário</h1><p>Use o código que você recebeu após a confirmação do pagamento. Não é necessário informar e-mail.</p></div>
       <form className="oda-login-form" onSubmit={submit}>
-        <label>Código de acesso<input type="text" value={code} onChange={event=>setCode(event.target.value.toUpperCase())} placeholder="Cole o código recebido" autoComplete="one-time-code" required/></label>
+        <label>Código de acesso<input type="text" inputMode="numeric" value={code} onChange={event=>setCode(event.target.value.replace(/\D/g,"").slice(0,6))} placeholder="000000" autoComplete="one-time-code" minLength={6} maxLength={6} pattern="\\d{6}" required/><small>Digite os 6 números recebidos.</small></label>
         <label>Nome de usuário<input type="text" value={username} onChange={event=>setUsername(event.target.value.toLowerCase())} placeholder="ex: leitor.2026" autoComplete="username" minLength={3} maxLength={24} pattern="[a-z0-9._-]{3,24}" required/><small>Use letras minúsculas, números, ponto, hífen ou underline.</small></label>
         <label>Crie uma senha<input type="password" value={password} onChange={event=>setPassword(event.target.value)} placeholder="Mínimo 8 caracteres" autoComplete="new-password" minLength={8} required/></label>
         <label>Confirme a senha<input type="password" value={confirmPassword} onChange={event=>setConfirmPassword(event.target.value)} placeholder="Repita a senha" autoComplete="new-password" minLength={8} required/></label>

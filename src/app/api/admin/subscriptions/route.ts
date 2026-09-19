@@ -1,7 +1,7 @@
 import { NextRequest,NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import { activateSubscription,cancelSubscription } from "@/lib/subscription";
+import { activateLifetimeSubscription,activateSubscription,cancelSubscription } from "@/lib/subscription";
 import { sendTelegramMessage,telegramMainKeyboard } from "@/lib/telegram";
 import { SITE_NAME } from "@/lib/site";
 
@@ -12,7 +12,7 @@ export async function GET(){
     await requireAdmin();const admin=createAdminSupabaseClient();
     const [{data:profiles,error:profilesError},{data:subscriptions,error:subsError},{data:telegram,error:telegramError}]=await Promise.all([
       admin.from("profiles").select("id,email,full_name,username,role,approved,created_at").order("created_at",{ascending:false}),
-      admin.from("subscriptions").select("user_id,status,active_until,activated_at,note,updated_at"),
+      admin.from("subscriptions").select("user_id,status,plan_type,active_until,activated_at,note,updated_at"),
       admin.from("telegram_accounts").select("user_id,telegram_user_id,username,first_name,linked_at")
     ]);
     if(profilesError||subsError||telegramError)throw new Error(profilesError?.message||subsError?.message||telegramError?.message);
@@ -31,6 +31,10 @@ export async function PATCH(request:NextRequest){
       subscription=await activateSubscription(userId,viewer.user.id,"Assinatura liberada/renovada manualmente — +30 dias");
       const {data:tg}=await admin.from("telegram_accounts").select("chat_id").eq("user_id",userId).maybeSingle();
       if(tg?.chat_id)try{await sendTelegramMessage(tg.chat_id,`🎉 <b>Assinatura renovada!</b>\n\nForam acrescentados <b>30 dias</b> ao seu acesso da ${SITE_NAME}.\n\n⏳ <b>Novo vencimento:</b> ${date(subscription.active_until)}\n\nSeu acesso aos downloads e pedidos pelo bot está liberado.`,telegramMainKeyboard());}catch(error){console.warn("[subscription-admin] aviso Telegram falhou",error);}
+    }else if(action==="lifetime"){
+      subscription=await activateLifetimeSubscription(userId,viewer.user.id,"Acesso vitalício liberado manualmente");
+      const {data:tg}=await admin.from("telegram_accounts").select("chat_id").eq("user_id",userId).maybeSingle();
+      if(tg?.chat_id)try{await sendTelegramMessage(tg.chat_id,`♾️ <b>Acesso vitalício liberado!</b>\n\nSeu acesso à ${SITE_NAME} agora é vitalício e não possui vencimento mensal.\n\nSeu login, downloads e pedidos pelo bot estão liberados.`,telegramMainKeyboard());}catch(error){console.warn("[subscription-admin] aviso Telegram falhou",error);}
     }else if(action==="cancel"){
       subscription=await cancelSubscription(userId,viewer.user.id);
       const {data:tg}=await admin.from("telegram_accounts").select("chat_id").eq("user_id",userId).maybeSingle();
