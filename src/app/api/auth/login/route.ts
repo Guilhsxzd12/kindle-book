@@ -13,13 +13,13 @@ export async function POST(request:NextRequest){
     if(!identifier.includes("@")){
       const admin=createAdminSupabaseClient();
       const {data}=await admin.from("profiles").select("email").ilike("username",identifier).maybeSingle();
-      if(!data?.email)return NextResponse.json({error:"E-mail, usuário ou senha incorretos."},{status:401});
+      if(!data?.email)return NextResponse.json({error:"Usuário ou senha incorretos."},{status:401});
       email=String(data.email).toLowerCase();
     }
 
     const supabase=await createServerSupabaseClient();
     const {data,error}=await supabase.auth.signInWithPassword({email,password});
-    if(error||!data.user)return NextResponse.json({error:"E-mail, usuário ou senha incorretos."},{status:401});
+    if(error||!data.user)return NextResponse.json({error:"Usuário ou senha incorretos."},{status:401});
     return NextResponse.json({ok:true});
   }catch{
     return NextResponse.json({error:"Não foi possível entrar agora."},{status:500});
