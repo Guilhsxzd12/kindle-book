@@ -128,7 +128,7 @@ async function lookupBest(title:string,rawFileName:string,isbn?:string|null){
 export async function identifyBookFromUpload(fileName:string,mimeType:string,bytes:Uint8Array):Promise<IdentifiedBook>{
   const guess=filenameGuess(fileName);const isEpub=mimeType==="application/epub+zip"||fileName.toLowerCase().endsWith(".epub");const embedded=isEpub?await epubMetadata(bytes):await pdfMetadata(bytes);
   let title=embedded?.title?.trim()||guess.title;let author=embedded?.author?.trim()||guess.author;let description=embedded?.description||null;let year=embedded?.year||null;let pages=embedded?.pages||null;let language=embedded?.language||null;let isbn=embedded?.isbn||null;let subjects=embedded?.subjects||[];
-  let confidence:IdentifiedBook["confidence"]=embedded?.title?(("usedContent" in embedded&&embedded.usedContent)?"content":"metadata"):"filename";
+  const usedContent=Boolean(embedded&&"usedContent" in embedded&&embedded.usedContent);\n  let confidence:IdentifiedBook["confidence"]=embedded?.title?(usedContent?"content":"metadata"):"filename";
   const lookup=await lookupBest(title,fileName,isbn);
   if(lookup){const found=lookup.item;if(!embedded?.title||lookup.score>=.82){title=found.title||title;confidence="lookup";}if((!author||genericAuthor(author))&&found.author)author=found.author;if(!description&&found.description)description=found.description;if(!year&&found.year)year=found.year;if(!pages&&found.pages)pages=found.pages;if(!language&&found.language)language=found.language;if(!isbn&&found.isbn)isbn=found.isbn;subjects=Array.from(new Set([...subjects,...found.categories])).slice(0,24);}
   return {title:title||"Livro enviado pelo Telegram",author:author||"Autor não informado",description,year,pages,language,isbn,subjects,confidence};
