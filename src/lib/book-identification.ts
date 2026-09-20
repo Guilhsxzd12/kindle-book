@@ -75,7 +75,28 @@ async function epubCover(zip:JSZip,opf:string,opfPath:string){
     const guideHref=opf.match(/<reference\b[^>]*type=["\']cover["\'][^>]*href=["\']([^"\']+)["\'][^>]*>/i)?.[1]||null;
     if(guideHref){const pagePath=resolveZipPath(base,guideHref);const page=await zip.file(pagePath)?.async("text");if(page){const imageHref=page.match(/<(?:img|image)\b[^>]*(?:src|href|xlink:href)=["\']([^"\']+)["\']/i)?.[1]||null;if(imageHref){const pageBase=pagePath.includes("/")?pagePath.slice(0,pagePath.lastIndexOf("/")):"";const imagePath=resolveZipPath(pageBase,imageHref);const file=zip.file(imagePath);if(file){const bytes=await file.async("uint8array");const ext=imageExtension("",imagePath);const mime=ext==="png"?"image/png":ext==="webp"?"image/webp":ext==="gif"?"image/gif":"image/jpeg";return {bytes,mimeType:mime,extension:ext} as EmbeddedBookCover;}}}}
   }
-  if(!item?.href)return null;
+  if(!item?.href){
+    const spineIds=[...opf.matchAll(/<itemref\b([^>]*?)\/?>/gi)].map(match=>attr(match[1],"idref")).filter(Boolean) as string[];
+    const firstSpine=spineIds[0];
+    const firstPageItem=firstSpine?items.find(x=>x.id===firstSpine):null;
+    if(firstPageItem?.href){
+      const pagePath=resolveZipPath(base,firstPageItem.href);
+      const page=await zip.file(pagePath)?.async("text");
+      if(page){
+        const imageHref=page.match(/<(?:img|image)\b[^>]*(?:src|href|xlink:href)=["']([^"']+)["']/i)?.[1]||null;
+        if(imageHref){
+          const pageBase=pagePath.includes("/")?pagePath.slice(0,pagePath.lastIndexOf("/")):"";
+          const imagePath=resolveZipPath(pageBase,imageHref);const firstImage=zip.file(imagePath);
+          if(firstImage){
+            const bytes=await firstImage.async("uint8array");const ext=imageExtension("",imagePath);
+            const mime=ext==="png"?"image/png":ext==="webp"?"image/webp":ext==="gif"?"image/gif":"image/jpeg";
+            return {bytes,mimeType:mime,extension:ext} as EmbeddedBookCover;
+          }
+        }
+      }
+    }
+    return null;
+  }
   const coverPath=resolveZipPath(base,item.href);const file=zip.file(coverPath);if(!file)return null;
   const bytes=await file.async("uint8array");const mime=item.mime||"image/jpeg";return {bytes,mimeType:mime,extension:imageExtension(mime,coverPath)} as EmbeddedBookCover;
 }
