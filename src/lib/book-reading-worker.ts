@@ -70,8 +70,7 @@ export async function processBookReadingJob(bookId:string){
     const patch:Record<string,unknown>={};
     const changes:Record<string,unknown>={};
 
-    const trustTitle=identified.confidence==="metadata"||identified.confidence==="content";
-    if(identified.title&&((trustTitle&&!same(identified.title,book.title))||genericTitle(book.title))){
+    if(identified.title&&genericTitle(book.title)){
       patch.title=identified.title;patch.slug=await uniqueSlug(identified.title,book.id);patch.drive_folder_letter=driveLetter(identified.title);changes.title=jsonChange(book.title,identified.title);
     }
     if(identified.author&&!genericAuthor(identified.author)&&(genericAuthor(book.author)||(identified.confidence==="metadata"&&!same(book.author,identified.author)))){
