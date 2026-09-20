@@ -10,7 +10,7 @@ type JobStatus="pending"|"processing"|"completed"|"error"|"unavailable";
 
 function genericAuthor(value?:string|null){
   const v=(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"");
-  return !v||v==="autornaoinformado"||v==="autornaoidentificado"||v==="desconhecido"||v==="unknown";
+  return !v||v==="autornaoinformado"||v==="autornaoidentificado"||v==="desconhecido"||v==="unknown"||/^\d+[ao]?serie$/i.test(v)||/^(serie|volume|vol|edicao|edition|scan|scanner|adobe|microsoftword|qp)\d*$/i.test(v);
 }
 function genericTitle(value?:string|null){
   const v=(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
@@ -18,7 +18,7 @@ function genericTitle(value?:string|null){
 }
 function same(a?:string|null,b?:string|null){return String(a||"").trim()===String(b||"").trim();}
 function titleNorm(value?:string|null){return String(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").replace(/\s+/g," ").trim();}
-function titleLooksNoisy(value?:string|null){return /(?:z[-_ ]?lib|1lib|canal\s*@|\.(?:pdf|epub)|\s--\s|\bby\s+[A-ZÀ-Ý]|^[\[\{]|^\d{1,3}[ _-]+\d{1,3}[ _-]+)/i.test(String(value||""));}
+function titleLooksNoisy(value?:string|null){return /(?:z[-_ ]?lib|1lib|canal\s*@|\.(?:pdf|epub)|\s--\s|\bby\s+[A-ZÀ-Ý]|^[\[\{\(]|^\d{1,3}[ _-]+\d{1,3}[ _-]+)/i.test(String(value||""));}
 function shouldImproveTitle(current:string,detected:string,format:string,confidence:string){
   if(genericTitle(current))return true;
   const a=titleNorm(current),b=titleNorm(detected);if(!a||!b||a===b)return false;
@@ -60,6 +60,8 @@ export async function processBookReadingJob(bookId:string){
   const book=bookData as Book;
   const source=chooseSource(book);
   if(!source){
+    const reasons=[genericTitle(book.title)?"Título não identificado":null,genericAuthor(book.author)?"Autor não identificado":null].filter(Boolean);
+    if(reasons.length)await db.from("books").update({needs_correction:true,correction_reason:reasons.join("; "),published:false,metadata_reviewed:false,updated_at:new Date().toISOString()}).eq("id",book.id);
     await setJob(bookId,{status:"unavailable",error:"Nenhum PDF ou EPUB disponível para leitura.",completed_at:new Date().toISOString()});
     return {bookId,status:"unavailable" as JobStatus,title:book.title};
   }
@@ -119,6 +121,24 @@ export async function processBookReadingJob(bookId:string){
     if(!book.language&&identified.language){patch.language=identified.language;changes.language=jsonChange(null,identified.language);}
     if(!book.category_id&&detectedCategoryId){patch.category_id=detectedCategoryId;changes.category=jsonChange(null,detectedCategoryName||detectedCategoryId);}
 
+    const finalTitle=String(patch.title??book.title);
+    const finalAuthor=String(patch.author??book.author);
+    const correctionReasons=[
+      genericTitle(finalTitle)||titleLooksNoisy(finalTitle)?"Título não identificado com segurança":null,
+      genericAuthor(finalAuthor)?"Autor não identificado":null
+    ].filter(Boolean) as string[];
+    if(correctionReasons.length){
+      patch.needs_correction=true;
+      patch.correction_reason=correctionReasons.join("; ");
+      patch.published=false;
+      patch.metadata_reviewed=false;
+    }else{
+      patch.needs_correction=false;
+      patch.correction_reason=null;
+      patch.metadata_reviewed=true;
+      if(book.needs_correction)patch.published=true;
+    }
+
     if(Object.keys(patch).length){
       patch.updated_at=new Date().toISOString();
       const {error:updateError}=await db.from("books").update(patch).eq("id",book.id);
@@ -144,6 +164,10 @@ export async function processBookReadingJob(bookId:string){
   }catch(error){
     const {data:job}=await db.from("book_reading_jobs").select("attempts").eq("book_id",bookId).maybeSingle();
     const attempts=Number(job?.attempts||1);const final=attempts>=3;
+    if(final){
+      const reasons=[genericTitle(book.title)?"Título não identificado":null,genericAuthor(book.author)?"Autor não identificado":null].filter(Boolean);
+      if(reasons.length)await db.from("books").update({needs_correction:true,correction_reason:reasons.join("; "),published:false,metadata_reviewed:false,updated_at:new Date().toISOString()}).eq("id",book.id);
+    }
     await setJob(bookId,{status:final?"error":"pending",error:error instanceof Error?error.message:"Falha ao ler o livro.",completed_at:final?new Date().toISOString():null});
     return {bookId,status:(final?"error":"pending") as JobStatus,title:book.title,error:error instanceof Error?error.message:"Falha ao ler o livro."};
   }
