@@ -4,7 +4,7 @@ import type { Book,Category } from "@/lib/types";
 
 type ChildShelf={category:Category;books:Book[];total:number};
 
-export function CategoryHub({category,initialBooks,total,children}:{category:Category;initialBooks:Book[];total:number;children:ChildShelf[]}){
+export function CategoryHub({category,initialBooks,total,children,isAdmin=false}:{category:Category;initialBooks:Book[];total:number;children:ChildShelf[];isAdmin?:boolean}){
   const visibleChildren=children.filter(item=>item.total>0);
   const specificChildren=visibleChildren.filter(item=>item.category.name.toLocaleLowerCase("pt-BR")!=="outros");
   const showCompleteShelf=specificChildren.length>0;
@@ -21,14 +21,14 @@ export function CategoryHub({category,initialBooks,total,children}:{category:Cat
       <div className="category-hub-shelves">
         {visibleChildren.map(({category:child,books,total:childTotal})=><section className="category-hub-shelf" id={`subcategoria-${child.slug}`} key={child.id}>
           <div className="category-title"><div><span className="eyebrow">SUBCATEGORIA</span><h3>{child.name}</h3></div><span className="shelf-total-label">{childTotal} {childTotal===1?"livro":"livros"}</span></div>
-          <LazyHorizontalBookShelf initialBooks={books} total={childTotal} categorySlug={child.slug}/>
+          <LazyHorizontalBookShelf initialBooks={books} total={childTotal} categorySlug={child.slug} isAdmin={isAdmin}/>
         </section>)}
       </div>
     </>}
 
     {showCompleteShelf&&<section className="category-hub-shelf category-hub-all" id="todos-da-categoria">
       <div className="category-title"><div><span className="eyebrow">COLEÇÃO COMPLETA</span><h3>Todos em {category.name}</h3></div><span className="shelf-total-label">{total} {total===1?"livro":"livros"}</span></div>
-      <LazyHorizontalBookShelf initialBooks={initialBooks} total={total} categorySlug={category.slug}/>
+      <LazyHorizontalBookShelf initialBooks={initialBooks} total={total} categorySlug={category.slug} isAdmin={isAdmin}/>
     </section>}
   </section>;
 }
