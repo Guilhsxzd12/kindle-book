@@ -9,6 +9,7 @@ import { PdfDownloadButton } from "@/components/PdfDownloadButton";
 import { BookCard } from "@/components/BookCard";
 import { HorizontalBookSlider } from "@/components/HorizontalBookSlider";
 import { BookViewTracker } from "@/components/BookViewTracker";
+import { QuickEditBookModal } from "@/components/QuickEditBookModal";
 import { requireApproved } from "@/lib/auth";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import type { Book } from "@/lib/types";
@@ -59,7 +60,7 @@ export default async function BookPage({params}:{params:Promise<{slug:string}>})
     <div className="detail-cover-col">{b.cover_url?<img className="cover" src={b.cover_url} alt={`Capa de ${b.title}`}/>:<div className="cover-fallback">{b.title}</div>}<div className="detail-small-meta">{b.categories?.name&&<span>{b.categories.name}</span>}{allLanguages.map(lang=><span key={lang.code}>{lang.code.toUpperCase()}</span>)}</div></div>
     <div className="detail-copy"><span className="eyebrow">KINDLE BOOKS</span><h1>{b.title}</h1><h2>{b.author}</h2>
       <div className="format-note"><strong>Escolha o formato</strong><span>{allLanguages.length>1?"Há mais de um idioma disponível. Depois de escolher o formato, selecione o idioma desejado.":"PDF para leitura direta ou EPUB para Kindle e outros aplicativos compatíveis."}</span></div>
-      <div className="detail-actions">{hasPdf&&<PdfDownloadButton bookId={b.id} languages={pdfLanguages}/>} {hasEpub&&<KindleShareButton id={b.id} title={b.title} author={b.author} source="catalog" languages={epubLanguages}/>}<FavoriteButton bookId={b.id} initial={Boolean(favorite)}/>{profile.role==="admin"&&<><Link className="btn" href={`/admin?edit=${encodeURIComponent(b.id)}`}>Editar livro</Link><Link className="btn ghost" href={`/admin/capas/${b.id}`}>Gerenciar capas</Link><Link className="btn ghost" href={`/admin/idiomas/${b.id}`}>Gerenciar idiomas</Link></>}</div>
+      <div className="detail-actions">{hasPdf&&<PdfDownloadButton bookId={b.id} languages={pdfLanguages}/>} {hasEpub&&<KindleShareButton id={b.id} title={b.title} author={b.author} source="catalog" languages={epubLanguages}/>}<FavoriteButton bookId={b.id} initial={Boolean(favorite)}/>{profile.role==="admin"&&<><QuickEditBookModal bookId={b.id} title={b.title} author={b.author}/><Link className="btn ghost" href={`/admin/capas/${b.id}`}>Gerenciar capas</Link><Link className="btn ghost" href={`/admin/idiomas/${b.id}`}>Gerenciar idiomas</Link></>}</div>
       {!hasPdf&&!hasEpub&&<div className="notice">Este título está temporariamente sem arquivo disponível.</div>}
       <div className="synopsis-block"><span className="eyebrow">SOBRE O LIVRO</span><div className="prose">{b.description||"Sinopse não informada."}</div></div></div>
   </section>
