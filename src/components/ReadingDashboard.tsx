@@ -85,7 +85,7 @@ export function ReadingDashboard(){
         <p>O sistema abre os arquivos, lê metadados e as primeiras páginas quando necessário, identifica título, autor e ISBN, consulta fontes externas e tenta classificar o livro automaticamente.</p>
       </div>
       <div className="reading-controls">
-        <span className={\`reading-live \${active?"on":""}\`}><i/>{working?"Lendo agora":"Monitoramento ativo"}</span>
+        <span className={`reading-live ${active?"on":""}`}><i/>{working?"Lendo agora":"Monitoramento ativo"}</span>
         <button type="button" className={active?"btn ghost":"btn"} onClick={()=>setActive(value=>!value)}>{active?"Pausar nesta tela":"Continuar leitura"}</button>
       </div>
     </div>
@@ -102,7 +102,7 @@ export function ReadingDashboard(){
 
     <div className="reading-progress card">
       <div className="reading-progress-head"><strong>Progresso da leitura</strong><span>{stats.completed.toLocaleString("pt-BR")} / {processable.toLocaleString("pt-BR")}</span></div>
-      <div className="reading-progress-track"><i style={{width:\`\${Math.min(100,percent)}%\`}}/></div>
+      <div className="reading-progress-track"><i style={{width:`${Math.min(100,percent)}%`}}/></div>
       <small>O servidor continua processando a fila automaticamente a cada 2 minutos, mesmo com esta aba fechada. Com a aba LEITURA aberta, o processamento é acelerado.</small>
     </div>
 
@@ -118,14 +118,14 @@ export function ReadingDashboard(){
 
       <section className="card panel">
         <div className="panel-title"><div><span className="eyebrow">HISTÓRICO</span><h2>Concluídos recentemente</h2></div><div className="row wrap">{stats.error>0&&<button type="button" className="btn ghost small" onClick={()=>void retryErrors()}>Tentar falhas novamente ({stats.error})</button>}</div></div>
-        <div className="reading-list">{recent.length?recent.map(item=><article className={\`reading-row \${item.status==="error"?"reading-error":""}\`} key={item.book_id}>
+        <div className="reading-list">{recent.length?recent.map(item=><article className={`reading-row ${item.status==="error"?"reading-error":""}`} key={item.book_id}>
           {item.book?.cover_url?<img src={item.book.cover_url} alt=""/>:<span className="mini-cover"/>}
           <div>
             <strong>{item.detected_title||item.book?.title||"Livro"}</strong>
-            <small>{item.status==="completed"?\`\${item.detected_author||item.book?.author||"Autor não identificado"} • \${item.detected_category_name||"categoria não identificada"} • \${confidenceLabel(item.confidence)}\`:(item.error||"Falha na leitura")}</small>
+            <small>{item.status==="completed"?`${item.detected_author||item.book?.author||"Autor não identificado"} • ${item.detected_category_name||"categoria não identificada"} • ${confidenceLabel(item.confidence)}`:(item.error||"Falha na leitura")}</small>
             {item.status==="completed"&&item.changes&&Object.keys(item.changes).length>0&&<small>Atualizado: {Object.keys(item.changes).join(", ")}.</small>}
           </div>
-          {item.book?.slug?<Link className="btn ghost small" href={\`/livro/\${item.book.slug}\`} target="_blank">Abrir ↗</Link>:<span>{item.status==="completed"?"✓":"!"}</span>}
+          {item.book?.slug?<Link className="btn ghost small" href={`/livro/${item.book.slug}`} target="_blank">Abrir ↗</Link>:<span>{item.status==="completed"?"✓":"!"}</span>}
         </article>):<div className="empty-state"><h3>Nenhuma leitura concluída ainda</h3><p>Os resultados vão aparecer aqui em tempo real.</p></div>}</div>
       </section>
     </div>
