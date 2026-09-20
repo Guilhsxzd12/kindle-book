@@ -5,12 +5,12 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import type { Book,BookRequest,Category,Profile } from "@/lib/types";
 
 export default async function AdminPage(){
-  const {supabase}=await requireAdmin();
+  await requireAdmin();
   const admin=createAdminSupabaseClient();
   const [{data:books},{data:coverlessBooks},{data:categories},{data:profiles},{data:requests},{data:telegram}]=await Promise.all([
-    supabase.from("books").select("*,categories(name)").or("cover_url.is.null,description.is.null,author.eq.,title.eq.").order("created_at",{ascending:false}).limit(500),
-    supabase.from("books").select("*,categories(name)").is("cover_url",null).order("created_at",{ascending:false}).limit(1000),
-    supabase.from("categories").select("*").order("name"),
+    admin.from("books").select("*,categories(name)").or("cover_url.is.null,description.is.null").order("created_at",{ascending:false}).limit(500),
+    admin.from("books").select("*,categories(name)").is("cover_url",null).order("created_at",{ascending:false}).limit(1000),
+    admin.from("categories").select("*").order("name"),
     admin.from("profiles").select("id,email,full_name,username,role,approved").order("created_at",{ascending:false}),
     admin.from("book_requests").select("*").order("created_at",{ascending:false}),
     admin.from("telegram_accounts").select("user_id,username")
