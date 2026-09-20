@@ -8,9 +8,10 @@ export default async function AdminPage({searchParams}:{searchParams:Promise<{ed
   await requireAdmin();
   const {edit=""}=await searchParams;
   const admin=createAdminSupabaseClient();
-  const [{data:books},{data:coverlessBooks},{data:editBook},{data:categories},{data:profiles},{data:requests},{data:telegram}]=await Promise.all([
+  const [{data:books},{data:coverlessBooks},{data:correctionBooks,count:correctionCount},{data:editBook},{data:categories},{data:profiles},{data:requests},{data:telegram}]=await Promise.all([
     admin.from("books").select("*,categories(name)").order("created_at",{ascending:false}).limit(500),
     admin.from("books").select("*,categories(name)").is("cover_url",null).order("created_at",{ascending:false}).limit(1000),
+    admin.from("books").select("*",{count:"exact"}).eq("needs_correction",true).order("updated_at",{ascending:false}).limit(120),
     edit?admin.from("books").select("*,categories(name)").eq("id",edit).maybeSingle():Promise.resolve({data:null}),
     admin.from("categories").select("*").order("name"),
     admin.from("profiles").select("id,email,full_name,username,role,approved").order("created_at",{ascending:false}),
@@ -20,5 +21,5 @@ export default async function AdminPage({searchParams}:{searchParams:Promise<{ed
   const profileMap=new Map((profiles||[]).map(p=>[p.id,p]));
   const telegramMap=new Map((telegram||[]).map(row=>[row.user_id,row.username]));
   const requestRows=(requests||[]).map(request=>({...request,requester_name:profileMap.get(request.user_id)?.full_name||null,requester_email:profileMap.get(request.user_id)?.email||null,telegram_username:telegramMap.get(request.user_id)||null})) as BookRequest[];
-  return <AppShell><main className="container admin-page"><div className="page-head"><div><span className="eyebrow">GESTÃO DO ACERVO</span><h1>Painel administrativo</h1><p>Pedidos, correções do acervo, categorias, usuários e Google Drive.</p></div></div><AdminDashboard initialBooks={(books||[]) as Book[]} initialCoverlessBooks={(coverlessBooks||[]) as Book[]} initialEditBook={(editBook||null) as Book|null} initialCategories={(categories||[]) as Category[]} initialProfiles={(profiles||[]) as Profile[]} initialRequests={requestRows}/></main></AppShell>;
+  return <AppShell><main className="container admin-page"><div className="page-head"><div><span className="eyebrow">GESTÃO DO ACERVO</span><h1>Painel administrativo</h1><p>Pedidos, correções do acervo, categorias, usuários e Google Drive.</p></div></div><AdminDashboard initialBooks={(books||[]) as Book[]} initialCoverlessBooks={(coverlessBooks||[]) as Book[]} initialCorrectionBooks={(correctionBooks||[]) as Book[]} initialCorrectionCount={correctionCount||0} initialEditBook={(editBook||null) as Book|null} initialCategories={(categories||[]) as Category[]} initialProfiles={(profiles||[]) as Profile[]} initialRequests={requestRows}/></main></AppShell>;
 }
