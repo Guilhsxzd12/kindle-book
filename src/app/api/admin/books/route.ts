@@ -20,6 +20,8 @@ async function uniqueSlug(title:string,excludeId?:string){
 }
 
 function text(value:unknown){return String(value||"").trim();}
+function genericAuthor(value:string){const v=value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"");return !v||["autornaoinformado","autornaoidentificado","desconhecido","unknown"].includes(v)||/^\d+[ao]?serie$/i.test(v);}
+function genericTitle(value:string){const v=value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();return !v||/^(sem titulo|livro enviado|livro sem titulo|unknown|arquivo|ebook|pdf)\b/.test(v);}
 function optionalNumber(value:unknown){if(value===""||value===null||value===undefined)return null;const number=Number(value);return Number.isFinite(number)?number:null;}
 
 function filePatch(body:any){
@@ -74,6 +76,15 @@ export async function PATCH(request:NextRequest){
       ...filePatch(body)
     };
     if(title!==before.title)patch.slug=await uniqueSlug(title,id);
+    const resolveCorrection=body.resolveCorrection===true||(before.needs_correction===true&&("title" in body||"author" in body));
+    if(resolveCorrection){
+      if(genericTitle(title))return NextResponse.json({error:"Informe um título válido para liberar o livro."},{status:400});
+      if(genericAuthor(author))return NextResponse.json({error:"Informe um autor válido para liberar o livro."},{status:400});
+      patch.needs_correction=false;
+      patch.correction_reason=null;
+      patch.metadata_reviewed=true;
+      if(body.resolveCorrection===true)patch.published=true;
+    }
     const {data,error}=await db.from("books").update(patch).eq("id",id).select("*").single();if(error)return NextResponse.json({error:error.message},{status:400});
     const requestId=text(body.requestId);const notification=requestId&&data.published?await completeBookRequest(requestId,data):null;
     return NextResponse.json({book:data,notification});
