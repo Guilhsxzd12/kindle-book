@@ -19,7 +19,7 @@ type LookupBook={title:string;author:string;description:string|null;year:number|
 function decodeXml(value:string){
   return value.replace(/&amp;/g,"&").replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&apos;/g,"'").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/\s+/g," ").trim();
 }
-function stripTags(value?:string|null){return value?decodeXml(value.replace(/<[^>]+>/g," "))||null:null;}
+function stripTags(value?:string|null){if(!value)return null;const decoded=decodeXml(value);return decodeXml(decoded.replace(/<[^>]+>/g," "))||null;}
 function compact(value:string){return value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"");}
 function yearFrom(value?:string|null){const m=value?.match(/\b(1[5-9]\d{2}|20\d{2}|21\d{2})\b/);return m?Number(m[1]):null;}
 function normalizeLanguage(value?:string|null){if(!value)return null;const v=value.trim().toLowerCase().replace(/_/g,"-");if(v.startsWith("pt")||v==="por")return "pt";if(v.startsWith("en")||v==="eng")return "en";if(v.startsWith("es")||v==="spa")return "es";return v.split("-")[0]||null;}
@@ -130,7 +130,7 @@ export async function identifyBookFromUpload(fileName:string,mimeType:string,byt
   let title=embedded?.title?.trim()||guess.title;let author=embedded?.author?.trim()||guess.author;let description=embedded?.description||null;let year=embedded?.year||null;let pages=embedded?.pages||null;let language=embedded?.language||null;let isbn=embedded?.isbn||null;let subjects=embedded?.subjects||[];
   const usedContent=Boolean(embedded&&"usedContent" in embedded&&embedded.usedContent);
   let confidence:IdentifiedBook["confidence"]=embedded?.title?(usedContent?"content":"metadata"):"filename";
-  const lookup=await lookupBest(title,fileName,isbn);
+  const needLookup=!embedded?.title||genericAuthor(author)||(!description&&subjects.length===0);\n  const lookup=needLookup?await lookupBest(title,fileName,isbn):null;
   if(lookup){const found=lookup.item;if(!embedded?.title||lookup.score>=.82){title=found.title||title;confidence="lookup";}if((!author||genericAuthor(author))&&found.author)author=found.author;if(!description&&found.description)description=found.description;if(!year&&found.year)year=found.year;if(!pages&&found.pages)pages=found.pages;if(!language&&found.language)language=found.language;if(!isbn&&found.isbn)isbn=found.isbn;subjects=Array.from(new Set([...subjects,...found.categories])).slice(0,24);}
   return {title:title||"Livro enviado pelo Telegram",author:author||"Autor não informado",description,year,pages,language,isbn,subjects,confidence};
 }
