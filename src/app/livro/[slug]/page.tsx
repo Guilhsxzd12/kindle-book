@@ -12,7 +12,7 @@ import { BookViewTracker } from "@/components/BookViewTracker";
 import { QuickEditBookModal } from "@/components/QuickEditBookModal";
 import { requireApproved } from "@/lib/auth";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import type { Book } from "@/lib/types";
+import type { Book,Category } from "@/lib/types";
 
 function isPdf(book:Book){return book.mime_type==="application/pdf"||book.file_name.toLowerCase().endsWith(".pdf");}
 function isEpub(book:Book){return book.mime_type==="application/epub+zip"||book.file_name.toLowerCase().endsWith(".epub");}
@@ -45,10 +45,11 @@ export default async function BookPage({params}:{params:Promise<{slug:string}>})
   }
   const b={...book,categories:categoryName?{name:categoryName}:null} as Book;
 
-  const [{data:favorite},{data:relatedData},{data:fileRows}]=await Promise.all([
+  const [{data:favorite},{data:relatedData},{data:fileRows},{data:adminCategories}]=await Promise.all([
     supabase.from("favorites").select("book_id").eq("user_id",user.id).eq("book_id",b.id).maybeSingle(),
     catalogDb.from("books").select("*").eq("published",true).neq("id",b.id).limit(40),
-    supabase.from("book_language_files").select("language,format").eq("book_id",b.id)
+    supabase.from("book_language_files").select("language,format").eq("book_id",b.id),
+    profile.role==="admin"?catalogDb.from("categories").select("id,name,slug,parent_id").order("name"):Promise.resolve({data:[]})
   ]);
 
   const relatedBase=(relatedData||[]) as Book[];
@@ -60,7 +61,7 @@ export default async function BookPage({params}:{params:Promise<{slug:string}>})
     <div className="detail-cover-col">{b.cover_url?<img className="cover" src={b.cover_url} alt={`Capa de ${b.title}`}/>:<div className="cover-fallback">{b.title}</div>}<div className="detail-small-meta">{b.categories?.name&&<span>{b.categories.name}</span>}{allLanguages.map(lang=><span key={lang.code}>{lang.code.toUpperCase()}</span>)}</div></div>
     <div className="detail-copy"><span className="eyebrow">KINDLE BOOKS</span><h1>{b.title}</h1><h2>{b.author}</h2>
       <div className="format-note"><strong>Escolha o formato</strong><span>{allLanguages.length>1?"Há mais de um idioma disponível. Depois de escolher o formato, selecione o idioma desejado.":"PDF para leitura direta ou EPUB para Kindle e outros aplicativos compatíveis."}</span></div>
-      <div className="detail-actions">{hasPdf&&<PdfDownloadButton bookId={b.id} languages={pdfLanguages}/>} {hasEpub&&<KindleShareButton id={b.id} title={b.title} author={b.author} source="catalog" languages={epubLanguages}/>}<FavoriteButton bookId={b.id} initial={Boolean(favorite)}/>{profile.role==="admin"&&<><QuickEditBookModal bookId={b.id} title={b.title} author={b.author}/><Link className="btn ghost" href={`/admin/capas/${b.id}`}>Gerenciar capas</Link><Link className="btn ghost" href={`/admin/idiomas/${b.id}`}>Gerenciar idiomas</Link></>}</div>
+      <div className="detail-actions">{hasPdf&&<PdfDownloadButton bookId={b.id} languages={pdfLanguages}/>} {hasEpub&&<KindleShareButton id={b.id} title={b.title} author={b.author} source="catalog" languages={epubLanguages}/>}<FavoriteButton bookId={b.id} initial={Boolean(favorite)}/>{profile.role==="admin"&&<><QuickEditBookModal bookId={b.id} title={b.title} author={b.author} categoryId={b.category_id} coverUrl={b.cover_url} categories={(adminCategories||[]) as Category[]}/><Link className="btn ghost" href={`/admin/capas/${b.id}`}>Gerenciar capas</Link><Link className="btn ghost" href={`/admin/idiomas/${b.id}`}>Gerenciar idiomas</Link></>}</div>
       {!hasPdf&&!hasEpub&&<div className="notice">Este título está temporariamente sem arquivo disponível.</div>}
       <div className="synopsis-block"><span className="eyebrow">SOBRE O LIVRO</span><div className="prose">{b.description||"Sinopse não informada."}</div></div></div>
   </section>
