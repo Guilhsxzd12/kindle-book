@@ -78,3 +78,14 @@
 }
 
 @media(max-width:420px){.cover-choice-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.header-action-icon:nth-of-type(1){display:none}.footer-main{grid-template-columns:1fr}.footer-main>div:last-child{grid-column:auto}.nav-dropdown-menu{grid-template-columns:1fr}}
+
+
+/* Admin quick cover edit on catalogue cards */
+.book-card-admin-wrap{position:relative;min-width:0}
+.book-card-admin-wrap>.catalog-book-card{height:100%}
+.book-card-admin-edit{position:absolute;z-index:8;top:10px;right:10px;min-height:30px;padding:6px 11px;border:1px solid rgba(77,8,48,.22);border-radius:999px;background:rgba(255,253,249,.96);color:#4D0830;font-size:10px;font-weight:900;cursor:pointer;box-shadow:0 5px 14px rgba(77,8,48,.14);backdrop-filter:blur(6px)}
+.book-card-admin-edit:hover{background:#4D0830;color:#FEF4E0;border-color:#4D0830;transform:translateY(-1px)}
+.quick-cover-modal{width:min(460px,100%)}
+.card-cover-edit-preview{display:grid;place-items:center;min-height:210px;padding:16px;border:1px dashed var(--line);border-radius:16px;background:var(--cream)}
+.card-cover-edit-preview img,.card-cover-edit-preview .cover-fallback{width:145px;aspect-ratio:2/3;border-radius:9px;object-fit:cover;box-shadow:0 12px 28px rgba(45,32,24,.16)}
+@media(max-width:560px){.book-card-admin-edit{top:7px;right:7px;min-height:28px;padding:5px 9px}.card-cover-edit-preview{min-height:180px}.card-cover-edit-preview img,.card-cover-edit-preview .cover-fallback{width:125px}}
