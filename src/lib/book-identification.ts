@@ -130,7 +130,8 @@ export async function identifyBookFromUpload(fileName:string,mimeType:string,byt
   let title=embedded?.title?.trim()||guess.title;let author=embedded?.author?.trim()||guess.author;let description=embedded?.description||null;let year=embedded?.year||null;let pages=embedded?.pages||null;let language=embedded?.language||null;let isbn=embedded?.isbn||null;let subjects=embedded?.subjects||[];
   const usedContent=Boolean(embedded&&"usedContent" in embedded&&embedded.usedContent);
   let confidence:IdentifiedBook["confidence"]=embedded?.title?(usedContent?"content":"metadata"):"filename";
-  const needLookup=!embedded?.title||genericAuthor(author)||(!description&&subjects.length===0);\n  const lookup=needLookup?await lookupBest(title,fileName,isbn):null;
+  const needLookup=!embedded?.title||genericAuthor(author)||(!description&&subjects.length===0);
+  const lookup=needLookup?await lookupBest(title,fileName,isbn):null;
   if(lookup){const found=lookup.item;if(!embedded?.title||lookup.score>=.82){title=found.title||title;confidence="lookup";}if((!author||genericAuthor(author))&&found.author)author=found.author;if(!description&&found.description)description=found.description;if(!year&&found.year)year=found.year;if(!pages&&found.pages)pages=found.pages;if(!language&&found.language)language=found.language;if(!isbn&&found.isbn)isbn=found.isbn;subjects=Array.from(new Set([...subjects,...found.categories])).slice(0,24);}
   return {title:title||"Livro enviado pelo Telegram",author:author||"Autor não informado",description,year,pages,language,isbn,subjects,confidence};
 }
