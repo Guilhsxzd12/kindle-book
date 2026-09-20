@@ -1,6 +1,6 @@
 import "server-only";
 import {createAdminSupabaseClient} from "@/lib/supabase/admin";
-import {fetchDriveFile} from "@/lib/google-drive";
+import {fetchDriveFile,uploadCatalogCoverBytes} from "@/lib/google-drive";
 import {identifyBookFromUpload} from "@/lib/book-identification";
 import {guessCategoryId} from "@/lib/category-match";
 import {driveLetter,slugifyTitle} from "@/lib/slugify";
@@ -17,6 +17,16 @@ function genericTitle(value?:string|null){
   return !v||/^(sem titulo|livro enviado|livro sem titulo|unknown|arquivo|ebook|pdf)\b/.test(v);
 }
 function same(a?:string|null,b?:string|null){return String(a||"").trim()===String(b||"").trim();}
+function titleNorm(value?:string|null){return String(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").replace(/\s+/g," ").trim();}
+function titleLooksNoisy(value?:string|null){return /(?:z[-_ ]?lib|1lib|canal\s*@|\.(?:pdf|epub)|\s--\s|\bby\s+[A-ZÀ-Ý]|^[\[\{]|^\d{1,3}[ _-]+\d{1,3}[ _-]+)/i.test(String(value||""));}
+function shouldImproveTitle(current:string,detected:string,format:string,confidence:string){
+  if(genericTitle(current))return true;
+  const a=titleNorm(current),b=titleNorm(detected);if(!a||!b||a===b)return false;
+  if(b.includes(a)&&b.length<=a.length+8)return false;
+  if(a.includes(b)&&b.length>=4)return true;
+  if(format==="epub"&&confidence==="metadata"&&titleLooksNoisy(current))return true;
+  return false;
+}
 function jsonChange(from:unknown,to:unknown){return {from:from??null,to:to??null};}
 
 async function uniqueSlug(title:string,excludeId:string){
@@ -60,7 +70,7 @@ export async function processBookReadingJob(bookId:string){
     const length=Number(response.headers.get("content-length")||0);
     if(length>120*1024*1024)throw new Error("Arquivo maior que 120 MB; leitura automática foi ignorada para proteger o servidor.");
     const bytes=new Uint8Array(await response.arrayBuffer());
-    const identified=await identifyBookFromUpload(source.name,source.mime,bytes);
+    const identified=await identifyBookFromUpload(source.name,source.mime,bytes,{title:book.title,author:book.author});
 
     const {data:categoryRows}=await db.from("categories").select("id,name,slug,parent_id").order("name");
     const categories=(categoryRows||[]) as Category[];
@@ -70,13 +80,25 @@ export async function processBookReadingJob(bookId:string){
     const patch:Record<string,unknown>={};
     const changes:Record<string,unknown>={};
 
-    if(identified.title&&genericTitle(book.title)){
+    if(identified.title&&shouldImproveTitle(book.title,identified.title,source.format,identified.confidence)){
       patch.title=identified.title;patch.slug=await uniqueSlug(identified.title,book.id);patch.drive_folder_letter=driveLetter(identified.title);changes.title=jsonChange(book.title,identified.title);
     }
-    if(identified.author&&!genericAuthor(identified.author)&&(genericAuthor(book.author)||(identified.confidence==="metadata"&&!same(book.author,identified.author)))){
+    if(identified.author&&!genericAuthor(identified.author)&&(genericAuthor(book.author)||(source.format==="epub"&&identified.confidence==="metadata"&&!same(book.author,identified.author)))){
       patch.author=identified.author;changes.author=jsonChange(book.author,identified.author);
     }
-    if(!book.description&&identified.description){patch.description=identified.description;changes.description=jsonChange(null,identified.description);}
+
+    let automaticCoverUrl:string|null=null;
+    let automaticCoverSource:string|null=null;
+    if(!book.cover_url&&identified.embeddedCover){
+      try{
+        const extension=identified.embeddedCover.extension||"jpg";
+        const uploaded=await uploadCatalogCoverBytes(book.id+"-cover."+extension,identified.embeddedCover.bytes,identified.embeddedCover.mimeType);
+        automaticCoverUrl="/api/covers/"+encodeURIComponent(uploaded.id);automaticCoverSource="embedded-file";
+      }catch(error){console.warn("[book-reading] embedded cover upload failed",{bookId:book.id,error:error instanceof Error?error.message:"unknown"});}
+    }
+    if(!book.cover_url&&!automaticCoverUrl&&identified.coverUrl){automaticCoverUrl=identified.coverUrl;automaticCoverSource="metadata";}
+    if(automaticCoverUrl){patch.cover_url=automaticCoverUrl;changes.cover=jsonChange(book.cover_url,automaticCoverUrl);}
+
     if(!book.year&&identified.year){patch.year=identified.year;changes.year=jsonChange(null,identified.year);}
     if(!book.pages&&identified.pages){patch.pages=identified.pages;changes.pages=jsonChange(null,identified.pages);}
     if(!book.language&&identified.language){patch.language=identified.language;changes.language=jsonChange(null,identified.language);}
@@ -86,6 +108,9 @@ export async function processBookReadingJob(bookId:string){
       patch.updated_at=new Date().toISOString();
       const {error:updateError}=await db.from("books").update(patch).eq("id",book.id);
       if(updateError)throw new Error(updateError.message);
+    }
+    if(automaticCoverUrl){
+      await db.from("book_covers").upsert({book_id:book.id,cover_url:automaticCoverUrl,label:"Capa identificada automaticamente",source:automaticCoverSource||"automatic"},{onConflict:"book_id,cover_url"});
     }
 
     await setJob(bookId,{
