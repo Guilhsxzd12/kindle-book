@@ -86,4 +86,16 @@ export async function uploadUserReadingPdf(userId:string,fileName:string,bytes:U
 export async function uploadCatalogKindleEpub(letter:string,fileName:string,bytes:Uint8Array){const token=await getGoogleAccessToken();const folderId=await findOrCreateCatalogKindleFolder(token,letter);return uploadBytesToFolder(bytes,fileName,"application/epub+zip",folderId);}
 
 export async function fetchDriveFile(fileId:string,range?:string|null){const token=await getGoogleAccessToken();const response=await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media`,{headers:{authorization:`Bearer ${token}`,...(range?{range}:{})},cache:"no-store"});if(!response.ok&&response.status!==206){const text=await response.text();throw new Error(`Falha ao ler arquivo do Drive (${response.status}): ${text.slice(0,180)}`);}return response;}
+export async function fetchDriveThumbnail(fileId:string){
+  const token=await getGoogleAccessToken();
+  const meta=await driveJson<{thumbnailLink?:string;mimeType?:string;name?:string}>(token,`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?fields=thumbnailLink,mimeType,name`);
+  if(!meta.thumbnailLink)return null;
+  const thumbnailUrl=meta.thumbnailLink.replace(/=s\d+(?:-[a-z0-9-]+)?$/i,"=s1200");
+  const response=await fetch(thumbnailUrl,{headers:{authorization:`Bearer ${token}`},cache:"no-store"});
+  if(!response.ok)return null;
+  const bytes=new Uint8Array(await response.arrayBuffer());
+  if(!bytes.byteLength)return null;
+  const contentType=response.headers.get("content-type")||"image/jpeg";
+  return {bytes,mimeType:contentType.startsWith("image/")?contentType:"image/jpeg",extension:contentType.includes("png")?"png":contentType.includes("webp")?"webp":"jpg"};
+}
 export async function deleteDriveFile(fileId:string){const token=await getGoogleAccessToken();const response=await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}`,{method:"DELETE",headers:{authorization:`Bearer ${token}`},cache:"no-store"});if(!response.ok&&response.status!==404){const text=await response.text();throw new Error(`Não foi possível excluir do Drive (${response.status}): ${text.slice(0,180)}`);}}
