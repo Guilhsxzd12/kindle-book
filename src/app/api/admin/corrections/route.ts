@@ -26,9 +26,10 @@ export async function GET(request:NextRequest){
     return NextResponse.json({books:data||[],total:count||0});
   }
 
-  const [titleResult,authorResult]=await Promise.all([
+  const [titleResult,authorResult,totalResult]=await Promise.all([
     admin.from("books").select("*").eq("needs_correction",true).ilike("title","%"+q+"%").limit(80),
-    admin.from("books").select("*").eq("needs_correction",true).ilike("author","%"+q+"%").limit(80)
+    admin.from("books").select("*").eq("needs_correction",true).ilike("author","%"+q+"%").limit(80),
+    admin.from("books").select("id",{count:"exact",head:true}).eq("needs_correction",true)
   ]);
   if(titleResult.error)return NextResponse.json({error:titleResult.error.message},{status:400});
   if(authorResult.error)return NextResponse.json({error:authorResult.error.message},{status:400});
@@ -36,5 +37,5 @@ export async function GET(request:NextRequest){
   const merged=new Map<string,any>();
   for(const book of [...(titleResult.data||[]),...(authorResult.data||[])])merged.set(book.id,book);
   const books=[...merged.values()].sort((a,b)=>String(a.title||"").localeCompare(String(b.title||""),"pt-BR")).slice(0,120);
-  return NextResponse.json({books,total:books.length});
+  return NextResponse.json({books,total:totalResult.count||0});
 }
