@@ -79,6 +79,7 @@ async function uploadBytesToFolder(bytes:Uint8Array,fileName:string,mimeType:str
 
 async function uploadFileToFolder(file:File,folderId:string){const safeBase=safeFileName(file.name);const bytes=new Uint8Array(await file.arrayBuffer());return uploadBytesToFolder(bytes,`${Date.now()}-${safeBase}`,file.type||"application/octet-stream",folderId);}
 export async function uploadCoverToDrive(file:File){const token=await getGoogleAccessToken();const folderId=await findOrCreateCoversFolder(token);return uploadFileToFolder(file,folderId);}
+export async function uploadCatalogCoverBytes(fileName:string,bytes:Uint8Array,mimeType:string){const token=await getGoogleAccessToken();const folderId=await findOrCreateCoversFolder(token);return uploadBytesToFolder(bytes,fileName,mimeType,folderId);}
 export async function uploadUserCoverToDrive(file:File,userId:string){const token=await getGoogleAccessToken();const folderId=await findOrCreateUserFolder(token,userId,"CAPAS");return uploadFileToFolder(file,folderId);}
 export async function uploadUserKindleEpub(userId:string,fileName:string,bytes:Uint8Array){const token=await getGoogleAccessToken();const folderId=await findOrCreateUserFolder(token,userId,"KINDLE");return uploadBytesToFolder(bytes,fileName,"application/epub+zip",folderId);}
 export async function uploadUserReadingPdf(userId:string,fileName:string,bytes:Uint8Array){const token=await getGoogleAccessToken();const folderId=await findOrCreateUserFolder(token,userId,"EBOOKS");return uploadBytesToFolder(bytes,fileName,"application/pdf",folderId);}
