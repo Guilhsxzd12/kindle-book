@@ -1,6 +1,6 @@
 import "server-only";
 import {createAdminSupabaseClient} from "@/lib/supabase/admin";
-import {fetchDriveFile,uploadCatalogCoverBytes} from "@/lib/google-drive";
+import {fetchDriveFile,fetchDriveThumbnail,uploadCatalogCoverBytes} from "@/lib/google-drive";
 import {identifyBookFromUpload} from "@/lib/book-identification";
 import {guessCategoryId} from "@/lib/category-match";
 import {driveLetter,slugifyTitle} from "@/lib/slugify";
@@ -89,6 +89,8 @@ export async function processBookReadingJob(bookId:string){
 
     let automaticCoverUrl:string|null=null;
     let automaticCoverSource:string|null=null;
+
+    // A capa do próprio arquivo sempre tem prioridade.
     if(!book.cover_url&&identified.embeddedCover){
       try{
         const extension=identified.embeddedCover.extension||"jpg";
@@ -96,7 +98,20 @@ export async function processBookReadingJob(bookId:string){
         automaticCoverUrl="/api/covers/"+encodeURIComponent(uploaded.id);automaticCoverSource="embedded-file";
       }catch(error){console.warn("[book-reading] embedded cover upload failed",{bookId:book.id,error:error instanceof Error?error.message:"unknown"});}
     }
-    if(!book.cover_url&&!automaticCoverUrl&&identified.coverUrl){automaticCoverUrl=identified.coverUrl;automaticCoverSource="metadata";}
+
+    // Em PDF, a miniatura do Google Drive representa a primeira página do arquivo.
+    if(!book.cover_url&&!automaticCoverUrl&&source.format==="pdf"){
+      try{
+        const thumbnail=await fetchDriveThumbnail(source.id);
+        if(thumbnail){
+          const uploaded=await uploadCatalogCoverBytes(book.id+"-page-1."+thumbnail.extension,thumbnail.bytes,thumbnail.mimeType);
+          automaticCoverUrl="/api/covers/"+encodeURIComponent(uploaded.id);automaticCoverSource="pdf-page-1";
+        }
+      }catch(error){console.warn("[book-reading] PDF first-page cover failed",{bookId:book.id,error:error instanceof Error?error.message:"unknown"});}
+    }
+
+    // Só procura capa externa quando o arquivo realmente não forneceu uma.
+    if(!book.cover_url&&!automaticCoverUrl&&identified.coverUrl){automaticCoverUrl=identified.coverUrl;automaticCoverSource="metadata-fallback";}
     if(automaticCoverUrl){patch.cover_url=automaticCoverUrl;changes.cover=jsonChange(book.cover_url,automaticCoverUrl);}
 
     if(!book.year&&identified.year){patch.year=identified.year;changes.year=jsonChange(null,identified.year);}
