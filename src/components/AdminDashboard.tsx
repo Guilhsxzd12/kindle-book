@@ -6,10 +6,11 @@ import { driveFileName } from "@/lib/slugify";
 import { guessCategoryId } from "@/lib/category-match";
 import { uploadDriveFileInChunks } from "@/lib/upload-client";
 import { ReadingDashboard } from "@/components/ReadingDashboard";
+import { CorrectionDashboard } from "@/components/CorrectionDashboard";
 import type { Book,BookMetadataResult,BookRequest,Category,Profile } from "@/lib/types";
 
-type Props={initialBooks:Book[];initialCoverlessBooks:Book[];initialEditBook:Book|null;initialCategories:Category[];initialProfiles:Profile[];initialRequests:BookRequest[]};
-type Tab="editar"|"capas"|"leitura"|"pedidos"|"categorias"|"usuarios"|"drive";
+type Props={initialBooks:Book[];initialCoverlessBooks:Book[];initialCorrectionBooks:Book[];initialCorrectionCount:number;initialEditBook:Book|null;initialCategories:Category[];initialProfiles:Profile[];initialRequests:BookRequest[]};
+type Tab="editar"|"capas"|"corrigir"|"leitura"|"pedidos"|"categorias"|"usuarios"|"drive";
 type Draft={title:string;author:string;description:string;language:string;year:string;pages:string;categoryId:string;coverUrl:string;published:boolean};
 type LocalMetadata={title?:string;author?:string;description?:string;language?:string;year?:number;pages?:number;subjects?:string[];coverFile?:File};
 type InviteResult={code:string;link:string;expiresAt:string;planType:"monthly"|"lifetime"};
@@ -50,7 +51,7 @@ async function readPdfMetadata(file:File):Promise<LocalMetadata>{
   return {title:pdf.getTitle()?.trim()||undefined,author:pdf.getAuthor()?.trim()||undefined,description:pdf.getSubject()?.trim()||undefined,year,pages:pdf.getPageCount()||undefined};
 }
 
-export function AdminDashboard({initialBooks,initialCoverlessBooks,initialEditBook,initialCategories,initialProfiles,initialRequests}:Props){
+export function AdminDashboard({initialBooks,initialCoverlessBooks,initialCorrectionBooks,initialCorrectionCount,initialEditBook,initialCategories,initialProfiles,initialRequests}:Props){
   const [tab,setTab]=useState<Tab>("editar");
   const [books,setBooks]=useState(initialEditBook&&!initialBooks.some(book=>book.id===initialEditBook.id)?[initialEditBook,...initialBooks]:initialBooks);const [coverlessBooks,setCoverlessBooks]=useState(initialCoverlessBooks);const [categories,setCategories]=useState(initialCategories);const [profiles,setProfiles]=useState(initialProfiles);const [requests,setRequests]=useState(initialRequests);
   const [draft,setDraft]=useState<Draft>(initialEditBook?{title:initialEditBook.title,author:initialEditBook.author,description:initialEditBook.description||"",language:initialEditBook.language||"pt",year:initialEditBook.year?String(initialEditBook.year):"",pages:initialEditBook.pages?String(initialEditBook.pages):"",categoryId:initialEditBook.category_id||"",coverUrl:initialEditBook.cover_url||"",published:initialEditBook.published}:emptyDraft);const [editing,setEditing]=useState<Book|null>(initialEditBook);const [requestId,setRequestId]=useState<string|null>(null);
@@ -58,7 +59,7 @@ export function AdminDashboard({initialBooks,initialCoverlessBooks,initialEditBo
   const [suggestions,setSuggestions]=useState<BookMetadataResult[]>([]);const [searching,setSearching]=useState(false);const [metadataError,setMetadataError]=useState("");const [selected,setSelected]=useState<BookMetadataResult|null>(null);
   const [bookSearch,setBookSearch]=useState("");const [bookSearchResults,setBookSearchResults]=useState<Book[]>([]);const [bookSearchBusy,setBookSearchBusy]=useState(false);const [bookSearchError,setBookSearchError]=useState("");const [coverSearch,setCoverSearch]=useState("");const [coverSearchResults,setCoverSearchResults]=useState<Book[]>([]);const [coverSearchBusy,setCoverSearchBusy]=useState(false);const [coverEditingId,setCoverEditingId]=useState<string|null>(null);const [coverDraftUrl,setCoverDraftUrl]=useState("");const [coverImage,setCoverImage]=useState<File|null>(null);const [coverBusyId,setCoverBusyId]=useState<string|null>(null);const [fileMetadataNote,setFileMetadataNote]=useState("");const [telegramBusyId,setTelegramBusyId]=useState<string|null>(null);
   const [message,setMessage]=useState("");const [busy,setBusy]=useState(false);const [progress,setProgress]=useState(0);const [drive,setDrive]=useState<{connected:boolean;accountEmail?:string|null}>({connected:false});
-  const [invitePlan,setInvitePlan]=useState<"monthly"|"lifetime">("lifetime");const [invite,setInvite]=useState<InviteResult|null>(null);
+  const [invitePlan,setInvitePlan]=useState<"monthly"|"lifetime">("lifetime");const [invite,setInvite]=useState<InviteResult|null>(null);const [correctionCount,setCorrectionCount]=useState(initialCorrectionCount);
   const pendingRequests=requests.filter(item=>item.status==="pending");const completedRequests=requests.filter(item=>item.status!=="pending");
   const suggestedCategory=selected?guessCategoryId(categories,selected.categories||[],selected.title,selected.description||""):null;
   const normalizedBookSearch=normText(bookSearch);const bookSearchReady=normalizedBookSearch.length>=4;
@@ -161,7 +162,7 @@ export function AdminDashboard({initialBooks,initialCoverlessBooks,initialEditBo
   async function updateUser(id:string,patch:{approved?:boolean;password?:string}){const response=await fetch("/api/admin/users",{method:"PATCH",headers:{"content-type":"application/json"},body:JSON.stringify({id,...patch})});const data=await response.json();if(response.ok){setProfiles(current=>current.map(profile=>profile.id===id?data.profile:profile));setMessage(patch.password?"Senha redefinida.":"Usuário atualizado.");}else setMessage(data.error||"Erro ao atualizar usuário.");}
   async function connectDrive(){const response=await fetch("/api/drive/auth-url");const data=await response.json();if(response.ok&&data.url)location.href=data.url;else setMessage(data.error||"Não foi possível conectar o Drive.");}
 
-  const tabs:[Tab,string][]=[["pedidos",`Pedidos (${pendingRequests.length})`],["editar","Editar livros"],["capas","Editar capas"],["leitura","Leitura"],["categorias","Categorias"],["usuarios","Usuários"],["drive","Google Drive"]];
+  const tabs:[Tab,string][]=[["pedidos",`Pedidos (${pendingRequests.length})`],["corrigir",`Corrigir (${correctionCount})`],["editar","Editar livros"],["capas","Editar capas"],["leitura","Leitura"],["categorias","Categorias"],["usuarios","Usuários"],["drive","Google Drive"]];
   return <>
     <div className="tabs">{tabs.map(([key,label])=><button key={key} className={`tab ${tab===key?"active":""}`} onClick={()=>setTab(key)}>{label}</button>)}</div>
     {message&&<div role="status" aria-live="polite" className={`notice ${/sucesso|criado|publicado|atualizado|liberado|reenviada|telegram:/i.test(message)?"success":""}`}>{message}</div>}
@@ -195,6 +196,8 @@ export function AdminDashboard({initialBooks,initialCoverlessBooks,initialEditBo
       <p className="admin-list-hint">{coverSearch&&!coverSearchReady?`Digite mais ${4-normalizedCoverSearch.length} ${4-normalizedCoverSearch.length===1?"letra":"letras"} para pesquisar em todo o acervo.`:coverSearchBusy?"Pesquisando...":coverSearchReady?`${shownCoverlessBooks.length} ${shownCoverlessBooks.length===1?"resultado encontrado":"resultados encontrados"} no acervo`:`Mostrando ${Math.min(12,coverlessBooks.length)} de ${coverlessBooks.length} livros sem capa`}</p>
       <div className="admin-book-list">{shownCoverlessBooks.length?shownCoverlessBooks.map(book=><article className="admin-book" key={book.id}>{book.cover_url?<img src={book.cover_url} alt=""/>:<span className="mini-cover"/>}<div><strong>{book.title}</strong><small>{book.author||"Autor não informado"} • {book.categories?.name||"Sem categoria"} • {book.published?"Publicado":"Oculto"}</small><small>URL: /livro/{book.slug}</small></div><div className="row wrap"><button className="btn small" onClick={()=>editCover(book)}>{book.cover_url?"Alterar capa":"Adicionar capa"}</button><button className="btn ghost small" onClick={()=>editBook(book)}>Editar livro</button><button className="btn danger small" onClick={()=>void removeBook(book.id)}>Excluir</button></div>{coverEditingId===book.id&&<div className="stack" style={{gridColumn:"1 / -1",width:"100%"}}><label>URL da capa<input value={coverDraftUrl} onChange={event=>setCoverDraftUrl(event.target.value)} placeholder="https://..."/></label><label>Ou envie uma imagem do dispositivo<input type="file" accept="image/jpeg,image/png,image/webp" onChange={event=>setCoverImage(event.target.files?.[0]||null)}/><small>{coverImage?`Imagem selecionada: ${coverImage.name}`:"JPG, PNG ou WEBP, até 5 MB."}</small></label><div className="row wrap"><button className="btn small" disabled={coverBusyId===book.id} onClick={()=>void saveCover(book)}>{coverBusyId===book.id?"Salvando...":"Salvar capa"}</button><button className="btn ghost small" disabled={coverBusyId===book.id} onClick={cancelCoverEdit}>Cancelar</button></div></div>}</article>):<div className="empty-state admin-search-empty"><h3>{coverSearchReady?"Nenhum livro encontrado":coverlessBooks.length?"Nenhum livro encontrado":"Nenhum livro sem capa"}</h3><p>{coverSearchReady?"Tente pesquisar por outro título ou autor.":coverlessBooks.length?"Digite pelo menos 4 letras para buscar em todo o acervo.":"Todos os livros cadastrados já possuem capa."}</p></div>}</div>
     </section>}
+
+    {tab==="corrigir"&&<CorrectionDashboard initialBooks={initialCorrectionBooks} initialTotal={initialCorrectionCount} onCountChange={setCorrectionCount}/>}
 
     {tab==="leitura"&&<ReadingDashboard/>}
 
