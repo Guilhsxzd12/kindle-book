@@ -27,7 +27,7 @@ function yearFrom(value?:string|null){const m=value?.match(/\b(1[5-9]\d{2}|20\d{
 function normalizeLanguage(value?:string|null){if(!value)return null;const v=value.trim().toLowerCase().replace(/_/g,"-");if(v.startsWith("pt")||v==="por")return "pt";if(v.startsWith("en")||v==="eng")return "en";if(v.startsWith("es")||v==="spa")return "es";return v.split("-")[0]||null;}
 function compactIsbn(value?:string|null){return String(value||"").replace(/[^0-9X]/gi,"").toUpperCase();}
 function extractIsbn(text:string){const match=text.match(/\bISBN(?:-1[03])?\s*:?\s*[\s-]*((?:97[89][\s-]?)?\d[\d\s-]{8,17}[\dX])\b/i);if(!match)return null;const isbn=compactIsbn(match[1]);return /^(?:\d{9}[\dX]|\d{13})$/.test(isbn)?isbn:null;}
-function genericAuthor(value?:string|null){const v=compact(value||"");return !v||v==="autornaoinformado"||v==="autornaoidentificado"||v==="desconhecido"||v==="unknown";}
+function genericAuthor(value?:string|null){const raw=String(value||"").trim();const v=compact(raw);return !v||v==="autornaoinformado"||v==="autornaoidentificado"||v==="desconhecido"||v==="unknown"||/^\\d+[aªo]?serie$/i.test(v)||/^(serie|volume|vol|edicao|edition|scan|scanner|adobe|microsoftword|qp)\\d*$/i.test(v);}
 function usefulTitle(value?:string|null){
   if(!value)return null;const v=value.replace(/\s+/g," ").trim();if(v.length<2||v.length>180)return null;
   if(/^(microsoft word|documento|untitled|sem titulo|unknown|arquivo|ebook|pdf)\b/i.test(v))return null;
