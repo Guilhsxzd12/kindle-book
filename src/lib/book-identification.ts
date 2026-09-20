@@ -117,7 +117,7 @@ async function googleBooks(query:string){
 }
 
 async function lookupBest(title:string,rawFileName:string,isbn?:string|null){
-  const words=title.split(/\s+/).filter(Boolean);const queries=[...(isbn?[\`isbn:\${isbn}\`]:[]),title];if(words[0]&&words[0].length>=4&&title.length>18)queries.push(words[0]);if(words.length>=2&&words.slice(0,2).join(" ")!==title)queries.push(words.slice(0,2).join(" "));
+  const words=title.split(/\s+/).filter(Boolean);const queries=[...(isbn?[`isbn:${isbn}`]:[]),title];if(words[0]&&words[0].length>=4&&title.length>18)queries.push(words[0]);if(words.length>=2&&words.slice(0,2).join(" ")!==title)queries.push(words.slice(0,2).join(" "));
   const settled=await Promise.allSettled([...new Set(queries)].slice(0,4).map(q=>googleBooks(q)));const candidates:LookupBook[]=[];for(const r of settled)if(r.status==="fulfilled")candidates.push(...r.value);
   if(isbn){const exact=candidates.find(item=>compactIsbn(item.isbn)===compactIsbn(isbn));if(exact)return {item:exact,score:1};}
   const target=filenameGuess(rawFileName).title;let best:LookupBook|null=null;let bestScore=0;
@@ -128,7 +128,8 @@ async function lookupBest(title:string,rawFileName:string,isbn?:string|null){
 export async function identifyBookFromUpload(fileName:string,mimeType:string,bytes:Uint8Array):Promise<IdentifiedBook>{
   const guess=filenameGuess(fileName);const isEpub=mimeType==="application/epub+zip"||fileName.toLowerCase().endsWith(".epub");const embedded=isEpub?await epubMetadata(bytes):await pdfMetadata(bytes);
   let title=embedded?.title?.trim()||guess.title;let author=embedded?.author?.trim()||guess.author;let description=embedded?.description||null;let year=embedded?.year||null;let pages=embedded?.pages||null;let language=embedded?.language||null;let isbn=embedded?.isbn||null;let subjects=embedded?.subjects||[];
-  const usedContent=Boolean(embedded&&"usedContent" in embedded&&embedded.usedContent);\n  let confidence:IdentifiedBook["confidence"]=embedded?.title?(usedContent?"content":"metadata"):"filename";
+  const usedContent=Boolean(embedded&&"usedContent" in embedded&&embedded.usedContent);
+  let confidence:IdentifiedBook["confidence"]=embedded?.title?(usedContent?"content":"metadata"):"filename";
   const lookup=await lookupBest(title,fileName,isbn);
   if(lookup){const found=lookup.item;if(!embedded?.title||lookup.score>=.82){title=found.title||title;confidence="lookup";}if((!author||genericAuthor(author))&&found.author)author=found.author;if(!description&&found.description)description=found.description;if(!year&&found.year)year=found.year;if(!pages&&found.pages)pages=found.pages;if(!language&&found.language)language=found.language;if(!isbn&&found.isbn)isbn=found.isbn;subjects=Array.from(new Set([...subjects,...found.categories])).slice(0,24);}
   return {title:title||"Livro enviado pelo Telegram",author:author||"Autor não informado",description,year,pages,language,isbn,subjects,confidence};
