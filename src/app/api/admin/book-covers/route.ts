@@ -22,11 +22,13 @@ export async function POST(request:NextRequest){
     const body=await request.json();const bookId=text(body.bookId);const coverUrl=text(body.coverUrl);const label=text(body.label)||null;
     if(!bookId||!coverUrl)return NextResponse.json({error:"Livro e capa são obrigatórios."},{status:400});
     const admin=createAdminSupabaseClient();
-    const {data:book}=await admin.from("books").select("id").eq("id",bookId).maybeSingle();
+    const {data:book}=await admin.from("books").select("id,cover_url").eq("id",bookId).maybeSingle();
     if(!book)return NextResponse.json({error:"Livro não encontrado."},{status:404});
     const {data,error}=await admin.from("book_covers").upsert({book_id:bookId,cover_url:coverUrl,label,source:"manual"},{onConflict:"book_id,cover_url"}).select("id,book_id,cover_url,label,source,created_at").single();
     if(error)return NextResponse.json({error:error.message},{status:400});
-    return NextResponse.json({cover:data});
+    const promotedToMain=!text(book.cover_url);
+    if(promotedToMain){const {error:bookError}=await admin.from("books").update({cover_url:coverUrl,updated_at:new Date().toISOString()}).eq("id",bookId);if(bookError)return NextResponse.json({error:bookError.message},{status:400});}
+    return NextResponse.json({cover:data,promotedToMain});
   }catch(error){return NextResponse.json({error:error instanceof Error?error.message:"Não foi possível salvar a capa."},{status:400});}
 }
 
