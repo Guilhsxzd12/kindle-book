@@ -5,7 +5,7 @@ import { BookCard } from "@/components/BookCard";
 import { HorizontalBookSlider } from "@/components/HorizontalBookSlider";
 import type { Book } from "@/lib/types";
 
-export function LazyHorizontalBookShelf({initialBooks,total,categorySlug,pageSize=30}:{initialBooks:Book[];total:number;categorySlug:string;pageSize?:number}){
+export function LazyHorizontalBookShelf({initialBooks,total,categorySlug,pageSize=30,isAdmin=false}:{initialBooks:Book[];total:number;categorySlug:string;pageSize?:number;isAdmin?:boolean}){
   const [books,setBooks]=useState<Book[]>(initialBooks);
   const [page,setPage]=useState(1);
   const [knownTotal,setKnownTotal]=useState(total);
@@ -48,7 +48,7 @@ export function LazyHorizontalBookShelf({initialBooks,total,categorySlug,pageSiz
 
   return <>
     <HorizontalBookSlider className="lazy-category-slider">
-      {books.map(book=><BookCard key={book.id} book={book}/>)}
+      {books.map(book=><BookCard key={book.id} book={book} isAdmin={isAdmin}/>)}
       {books.length<knownTotal&&<div ref={sentinel} className="shelf-load-card" aria-live="polite"><span>{failed?"Não carregou":"Mais livros"}</span>{failed?<button type="button" onClick={()=>void loadMore()}>Tentar novamente</button>:<small>Continue deslizando →</small>}</div>}
     </HorizontalBookSlider>
     <div className="shelf-loaded-count">{books.length} de {knownTotal} {knownTotal===1?"livro":"livros"}</div>
