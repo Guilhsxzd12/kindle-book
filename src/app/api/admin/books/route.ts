@@ -43,7 +43,7 @@ export async function POST(request:NextRequest){
     const coverUrl=text(body.coverUrl)||null;
     const year=optionalNumber(body.year);const pages=optionalNumber(body.pages);const now=new Date().toISOString();
     const payload={title,slug:await uniqueSlug(title),author,description:description||null,language:text(body.language).toLowerCase()||null,category_id:text(body.categoryId)||null,year,pages,cover_url:coverUrl,drive_folder_letter:driveLetter(title),allow_download:true,published:body.published!==false,updated_at:now,metadata_reviewed:body.metadataReviewed!==false,...files};
-    const db=createAdminSupabaseClient();const {data,error}=await db.from("books").insert(payload).select("*,categories(name)").single();
+    const db=createAdminSupabaseClient();const {data,error}=await db.from("books").insert(payload).select("*").single();
     if(error)return NextResponse.json({error:error.message},{status:400});
     const requestId=text(body.requestId);const notification=requestId&&data.published?await completeBookRequest(requestId,data):null;
     return NextResponse.json({book:data,notification});
@@ -74,7 +74,7 @@ export async function PATCH(request:NextRequest){
       ...filePatch(body)
     };
     if(title!==before.title)patch.slug=await uniqueSlug(title,id);
-    const {data,error}=await db.from("books").update(patch).eq("id",id).select("*,categories(name)").single();if(error)return NextResponse.json({error:error.message},{status:400});
+    const {data,error}=await db.from("books").update(patch).eq("id",id).select("*").single();if(error)return NextResponse.json({error:error.message},{status:400});
     const requestId=text(body.requestId);const notification=requestId&&data.published?await completeBookRequest(requestId,data):null;
     return NextResponse.json({book:data,notification});
   }catch(error){return NextResponse.json({error:error instanceof Error?error.message:"Erro ao atualizar livro."},{status:400});}
