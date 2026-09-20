@@ -8,7 +8,7 @@ export default async function AdminPage(){
   await requireAdmin();
   const admin=createAdminSupabaseClient();
   const [{data:books},{data:coverlessBooks},{data:categories},{data:profiles},{data:requests},{data:telegram}]=await Promise.all([
-    admin.from("books").select("*,categories(name)").or("cover_url.is.null,description.is.null").order("created_at",{ascending:false}).limit(500),
+    admin.from("books").select("*,categories(name)").order("created_at",{ascending:false}).limit(500),
     admin.from("books").select("*,categories(name)").is("cover_url",null).order("created_at",{ascending:false}).limit(1000),
     admin.from("categories").select("*").order("name"),
     admin.from("profiles").select("id,email,full_name,username,role,approved").order("created_at",{ascending:false}),
