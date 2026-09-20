@@ -76,8 +76,8 @@ export function QuickEditBookModal({bookId,title:initialTitle,author:initialAuth
     setTitle(initialTitle);
     setAuthor(initialAuthor);
     setCategoryId(initialCategoryId||"");
-    setCategoryTouched(false);
-    setCategoryNote(initialCategoryId?"":"Identificando categoria...");
+    setCategoryTouched(Boolean(initialCategoryId));
+    setCategoryNote(initialCategoryId?`Categoria atual: ${categories.find(item=>item.id===initialCategoryId)?.name||"cadastrada"}.`:"Identificando categoria...");
     setCoverFile(null);
     setCoverPreview(initialCoverUrl||"");
     setMessage("");
