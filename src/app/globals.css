@@ -70,3 +70,11 @@
 .quick-edit-close:disabled{opacity:.5;cursor:not-allowed}
 .quick-edit-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:4px}
 @media(max-width:560px){.quick-edit-backdrop{align-items:end;padding:12px}.quick-edit-modal{border-radius:22px 22px 12px 12px}.quick-edit-actions{display:grid;grid-template-columns:1fr 1fr}.quick-edit-actions .btn{width:100%}}
+
+.quick-edit-cover-row{display:grid;grid-template-columns:72px 1fr;gap:12px;align-items:center}
+.quick-edit-cover-row img,.quick-edit-cover-placeholder{width:72px;height:102px;border-radius:8px;border:1px solid var(--line);background:var(--cream);object-fit:cover}
+.quick-edit-cover-placeholder{display:grid;place-items:center;padding:8px;color:var(--muted);text-align:center;font-size:10px}
+.quick-edit-cover-row>div{display:grid;gap:6px;min-width:0}
+.quick-edit-cover-row input[type="file"]{padding:10px;background:#fff}
+.quick-edit-modal small{color:var(--muted);font-weight:500;line-height:1.45}
+@media(max-width:560px){.quick-edit-cover-row{grid-template-columns:62px 1fr}.quick-edit-cover-row img,.quick-edit-cover-placeholder{width:62px;height:88px}}
