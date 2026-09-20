@@ -12,7 +12,7 @@ export async function GET(request:NextRequest){
   if(normalized.length<4)return NextResponse.json({books:[]});
 
   const admin=createAdminSupabaseClient();
-  const columns="*,categories(name)";
+  const columns="*";
   const [titleResult,authorResult]=await Promise.all([
     admin.from("books").select(columns).ilike("title",`%${q}%`).limit(40),
     admin.from("books").select(columns).ilike("author",`%${q}%`).limit(40)
