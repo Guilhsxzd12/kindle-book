@@ -58,3 +58,15 @@
  .capsule-store-header .header-capsule{grid-template-columns:minmax(100px,1fr) 40px minmax(130px,auto) 40px;gap:6px}
  .mobile-header-request{width:130px;min-width:130px;height:40px;padding:0 10px;gap:7px;font-size:11px}
 }
+
+
+/* Quick book edit */
+.quick-edit-backdrop{position:fixed;z-index:200;inset:0;display:grid;place-items:center;padding:24px;background:rgba(36,28,24,.48);backdrop-filter:blur(5px)}
+.quick-edit-modal{width:min(520px,100%);padding:26px;border:1px solid var(--line);border-radius:22px;background:var(--paper);box-shadow:0 28px 90px rgba(36,28,24,.3)}
+.quick-edit-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:22px}
+.quick-edit-head h2{margin:5px 0 7px;font:700 34px/1 Georgia,serif}
+.quick-edit-head p{margin:0;color:var(--muted);font-size:13px}
+.quick-edit-close{display:grid;place-items:center;flex:0 0 38px;width:38px;height:38px;border:1px solid var(--line);border-radius:50%;background:#fff;color:var(--ink);font-size:25px;line-height:1;cursor:pointer}
+.quick-edit-close:disabled{opacity:.5;cursor:not-allowed}
+.quick-edit-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:4px}
+@media(max-width:560px){.quick-edit-backdrop{align-items:end;padding:12px}.quick-edit-modal{border-radius:22px 22px 12px 12px}.quick-edit-actions{display:grid;grid-template-columns:1fr 1fr}.quick-edit-actions .btn{width:100%}}
