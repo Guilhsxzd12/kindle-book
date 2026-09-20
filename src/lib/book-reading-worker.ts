@@ -22,18 +22,18 @@ function jsonChange(from:unknown,to:unknown){return {from:from??null,to:to??null
 async function uniqueSlug(title:string,excludeId:string){
   const db=createAdminSupabaseClient();const base=slugifyTitle(title).toLowerCase()||"livro";
   for(let suffix=0;suffix<100;suffix++){
-    const candidate=suffix===0?base:\`\${base}-\${suffix+1}\`;
+    const candidate=suffix===0?base:`${base}-${suffix+1}`;
     const {data}=await db.from("books").select("id").eq("slug",candidate).neq("id",excludeId).maybeSingle();
     if(!data)return candidate;
   }
-  return \`\${base}-\${Date.now()}\`;
+  return `${base}-${Date.now()}`;
 }
 
 function chooseSource(book:Book){
-  if(book.kindle_drive_file_id)return {id:book.kindle_drive_file_id,name:book.kindle_file_name||book.file_name||\`\${book.title}.epub\`,mime:"application/epub+zip",format:"epub"};
-  if(book.drive_file_id&&(book.mime_type==="application/epub+zip"||book.file_name?.toLowerCase().endsWith(".epub")))return {id:book.drive_file_id,name:book.file_name||\`\${book.title}.epub\`,mime:"application/epub+zip",format:"epub"};
-  if(book.reading_pdf_drive_file_id)return {id:book.reading_pdf_drive_file_id,name:book.reading_pdf_file_name||book.file_name||\`\${book.title}.pdf\`,mime:"application/pdf",format:"pdf"};
-  if(book.drive_file_id)return {id:book.drive_file_id,name:book.file_name||\`\${book.title}.pdf\`,mime:book.mime_type||"application/pdf",format:(book.mime_type||"").includes("epub")?"epub":"pdf"};
+  if(book.kindle_drive_file_id)return {id:book.kindle_drive_file_id,name:book.kindle_file_name||book.file_name||`${book.title}.epub`,mime:"application/epub+zip",format:"epub"};
+  if(book.drive_file_id&&(book.mime_type==="application/epub+zip"||book.file_name?.toLowerCase().endsWith(".epub")))return {id:book.drive_file_id,name:book.file_name||`${book.title}.epub`,mime:"application/epub+zip",format:"epub"};
+  if(book.reading_pdf_drive_file_id)return {id:book.reading_pdf_drive_file_id,name:book.reading_pdf_file_name||book.file_name||`${book.title}.pdf`,mime:"application/pdf",format:"pdf"};
+  if(book.drive_file_id)return {id:book.drive_file_id,name:book.file_name||`${book.title}.pdf`,mime:book.mime_type||"application/pdf",format:(book.mime_type||"").includes("epub")?"epub":"pdf"};
   return null;
 }
 
