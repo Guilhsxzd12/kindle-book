@@ -8,7 +8,7 @@ export function guessCategoryId(categories:Category[],subjects:string[]=[],title
   const rules:[string,string[]][]=[
     ["Mangá",["manga","mangá","japanese comics","shonen","shojo","seinen"]],
     ["Super-heróis",["superhero","super hero","super-heroi","super-herói","marvel","dc comics"]],
-    ["HQ e Graphic Novel",["comic","comics","comic book","quadrinhos","historia em quadrinhos","história em quadrinhos","graphic novel","gibi","gibiteca","banda desenhada","walt disney","disney","ze carioca","zé carioca","tio patinhas","uncle scrooge","donald duck","pato donald","mickey"]],
+    ["HQ e Graphic Novel",["comic","comics","comic book","quadrinhos","historia em quadrinhos","história em quadrinhos","graphic novel","gibi","gibiteca","banda desenhada","walt disney","disney","ze carioca","zé carioca","tio patinhas","uncle scrooge","donald duck","pato donald","mickey","minnie","pateta","peninha","almanaque disney","disney especial"]],
     ["Terror",["horror","terror","ghost","vampire","zombie","supernatural horror"]],
     ["Fantasia",["fantasy","fantasia","magic","magia","dragons","wizard","fairy","mythical"]],
     ["Romance",["romance","love stories","romantic","amor","relationships"]],
