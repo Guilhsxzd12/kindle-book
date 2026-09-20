@@ -108,7 +108,7 @@ end $$;
 
 select cron.schedule(
   'book-reading-worker',
-  '*/2 * * * *',
+  '* * * * *',
   $cron$
     select net.http_get(
       url := 'https://www.estantevirtual.shop/api/cron/book-reading?limit=3',
