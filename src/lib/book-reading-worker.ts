@@ -76,7 +76,7 @@ export async function processBookReadingJob(bookId:string){
 
     const {data:categoryRows}=await db.from("categories").select("id,name,slug,parent_id").order("name");
     const categories=(categoryRows||[]) as Category[];
-    const detectedCategoryId=guessCategoryId(categories,identified.subjects||[],identified.title,identified.description||"");
+    const detectedCategoryId=guessCategoryId(categories,identified.subjects||[],identified.title,identified.description||"",identified.author||book.author);
     const detectedCategory=categories.find(item=>item.id===detectedCategoryId)||null;
     const detectedCategoryName=detectedCategory?.name||null;
     const currentCategory=categories.find(item=>item.id===book.category_id)||null;
