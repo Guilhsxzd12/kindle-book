@@ -72,7 +72,7 @@ export function CorrectionDashboard({initialBooks,initialTotal,onCountChange}:{i
       setBooks(current=>current.filter(book=>book.id!==editing.id));
       setTotal(current=>Math.max(0,current-1));
       setEditing(null);setCoverFile(null);setPreview("");
-      setMessage(data.book.title+" corrigido e liberado no catálogo.");
+      setMessage(data.book.title+" corrigido e atualizado no catálogo.");
     }catch(error){setMessage(error instanceof Error?error.message:"Não foi possível salvar a correção.");}
     finally{setSaving(false);}
   }
@@ -90,7 +90,7 @@ export function CorrectionDashboard({initialBooks,initialTotal,onCountChange}:{i
 
   return <section className="card panel correction-panel">
     <div className="panel-title">
-      <div><span className="eyebrow">REVISÃO MANUAL</span><h2>Corrigir livros</h2><p>Somente livros em que a leitura automática não conseguiu confirmar título ou autor ficam aqui. Enquanto estiverem nesta lista, eles ficam ocultos do catálogo.</p></div>
+      <div><span className="eyebrow">REVISÃO MANUAL</span><h2>Corrigir livros</h2><p>Somente livros em que a leitura automática não conseguiu confirmar título ou autor ficam aqui. Eles continuam visíveis no catálogo enquanto aguardam a correção.</p></div>
       <span className="count-badge">{total}</span>
     </div>
 
@@ -115,7 +115,7 @@ export function CorrectionDashboard({initialBooks,initialTotal,onCountChange}:{i
 
     {editing&&<div className="quick-edit-backdrop" role="presentation" onMouseDown={event=>{if(event.target===event.currentTarget&&!saving)closeEdit();}}>
       <section className="quick-edit-modal correction-modal" role="dialog" aria-modal="true">
-        <div className="quick-edit-head"><div><span className="eyebrow">CORREÇÃO MANUAL</span><h2>Corrigir livro</h2><p>Ao salvar, o livro sai desta lista e volta ao catálogo.</p></div><button type="button" className="quick-edit-close" onClick={closeEdit} disabled={saving}>×</button></div>
+        <div className="quick-edit-head"><div><span className="eyebrow">CORREÇÃO MANUAL</span><h2>Corrigir livro</h2><p>Ao salvar, o livro sai desta lista e os dados são atualizados no catálogo.</p></div><button type="button" className="quick-edit-close" onClick={closeEdit} disabled={saving}>×</button></div>
         <form className="stack" onSubmit={save}>
           <label>Título<input value={title} onChange={event=>setTitle(event.target.value)} required autoFocus/></label>
           <label>Autor<input value={author} onChange={event=>setAuthor(event.target.value)} placeholder="Digite o autor correto" required/></label>
@@ -125,7 +125,7 @@ export function CorrectionDashboard({initialBooks,initialTotal,onCountChange}:{i
               <div><input type="file" accept="image/jpeg,image/png,image/webp" onChange={event=>chooseCover(event.target.files?.[0]||null)}/><small>{coverFile?coverFile.name:"Você pode manter a capa atual ou enviar outra."}</small></div>
             </div>
           </label>
-          <div className="quick-edit-actions"><button type="button" className="btn ghost" onClick={closeEdit} disabled={saving}>Cancelar</button><button className="btn" disabled={saving}>{saving?"Salvando...":"Salvar e liberar"}</button></div>
+          <div className="quick-edit-actions"><button type="button" className="btn ghost" onClick={closeEdit} disabled={saving}>Cancelar</button><button className="btn" disabled={saving}>{saving?"Salvando...":"Salvar e atualizar"}</button></div>
         </form>
       </section>
     </div>}
