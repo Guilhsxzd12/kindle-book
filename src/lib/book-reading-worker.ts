@@ -77,7 +77,13 @@ export async function processBookReadingJob(bookId:string){
     const {data:categoryRows}=await db.from("categories").select("id,name,slug,parent_id").order("name");
     const categories=(categoryRows||[]) as Category[];
     const detectedCategoryId=guessCategoryId(categories,identified.subjects||[],identified.title,identified.description||"");
-    const detectedCategoryName=categories.find(item=>item.id===detectedCategoryId)?.name||null;
+    const detectedCategory=categories.find(item=>item.id===detectedCategoryId)||null;
+    const detectedCategoryName=detectedCategory?.name||null;
+    const currentCategory=categories.find(item=>item.id===book.category_id)||null;
+    const canImproveCategory=Boolean(detectedCategoryId&&(
+      !book.category_id||
+      (currentCategory&&!currentCategory.parent_id&&detectedCategory?.parent_id===currentCategory.id&&detectedCategory.id!==currentCategory.id)
+    ));
 
     const patch:Record<string,unknown>={};
     const changes:Record<string,unknown>={};
@@ -119,7 +125,7 @@ export async function processBookReadingJob(bookId:string){
     if(!book.year&&identified.year){patch.year=identified.year;changes.year=jsonChange(null,identified.year);}
     if(!book.pages&&identified.pages){patch.pages=identified.pages;changes.pages=jsonChange(null,identified.pages);}
     if(!book.language&&identified.language){patch.language=identified.language;changes.language=jsonChange(null,identified.language);}
-    if(!book.category_id&&detectedCategoryId){patch.category_id=detectedCategoryId;changes.category=jsonChange(null,detectedCategoryName||detectedCategoryId);}
+    if(canImproveCategory&&detectedCategoryId){patch.category_id=detectedCategoryId;changes.category=jsonChange(currentCategory?.name||null,detectedCategoryName||detectedCategoryId);}
 
     const finalTitle=String(patch.title??book.title);
     const finalAuthor=String(patch.author??book.author);
