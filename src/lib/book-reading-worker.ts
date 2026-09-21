@@ -61,7 +61,7 @@ export async function processBookReadingJob(bookId:string){
   const source=chooseSource(book);
   if(!source){
     const reasons=[genericTitle(book.title)?"Título não identificado":null,genericAuthor(book.author)?"Autor não identificado":null].filter(Boolean);
-    if(reasons.length)await db.from("books").update({needs_correction:true,correction_reason:reasons.join("; "),published:false,metadata_reviewed:false,updated_at:new Date().toISOString()}).eq("id",book.id);
+    if(reasons.length)await db.from("books").update({needs_correction:true,correction_reason:reasons.join("; "),metadata_reviewed:false,updated_at:new Date().toISOString()}).eq("id",book.id);
     await setJob(bookId,{status:"unavailable",error:"Nenhum PDF ou EPUB disponível para leitura.",completed_at:new Date().toISOString()});
     return {bookId,status:"unavailable" as JobStatus,title:book.title};
   }
@@ -130,7 +130,6 @@ export async function processBookReadingJob(bookId:string){
     if(correctionReasons.length){
       patch.needs_correction=true;
       patch.correction_reason=correctionReasons.join("; ");
-      patch.published=false;
       patch.metadata_reviewed=false;
     }else{
       patch.needs_correction=false;
@@ -166,7 +165,7 @@ export async function processBookReadingJob(bookId:string){
     const attempts=Number(job?.attempts||1);const final=attempts>=3;
     if(final){
       const reasons=[genericTitle(book.title)?"Título não identificado":null,genericAuthor(book.author)?"Autor não identificado":null].filter(Boolean);
-      if(reasons.length)await db.from("books").update({needs_correction:true,correction_reason:reasons.join("; "),published:false,metadata_reviewed:false,updated_at:new Date().toISOString()}).eq("id",book.id);
+      if(reasons.length)await db.from("books").update({needs_correction:true,correction_reason:reasons.join("; "),metadata_reviewed:false,updated_at:new Date().toISOString()}).eq("id",book.id);
     }
     await setJob(bookId,{status:final?"error":"pending",error:error instanceof Error?error.message:"Falha ao ler o livro.",completed_at:final?new Date().toISOString():null});
     return {bookId,status:(final?"error":"pending") as JobStatus,title:book.title,error:error instanceof Error?error.message:"Falha ao ler o livro."};
