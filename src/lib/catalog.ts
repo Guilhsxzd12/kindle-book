@@ -23,7 +23,7 @@ export async function searchCatalog(db:SupabaseClient, options:{search?:string;c
   return unstable_cache(
     ()=>runCatalogSearch(db,options),
     ["catalog-search",JSON.stringify(options)],
-    {revalidate:120}
+    {revalidate:120,tags:["catalog"]}
   )();
 }
 
@@ -32,7 +32,7 @@ export async function catalogAuthors(db:SupabaseClient){
     const {data,error}=await db.rpc("catalog_authors");
     if(error){console.error("[catalog_authors]",{code:error.code,message:error.message});return [] as string[];}
     return data as string[];
-  },["catalog-authors"],{revalidate:600})();
+  },["catalog-authors"],{revalidate:600,tags:["catalog"]})();
 }
 
 export async function catalogShelves(db:SupabaseClient,parentSlug="",size=12){
@@ -43,5 +43,5 @@ export async function catalogShelves(db:SupabaseClient,parentSlug="",size=12){
       return {} as CatalogShelfMap;
     }
     return (data||{}) as CatalogShelfMap;
-  },["catalog-shelves",parentSlug,String(size)],{revalidate:120})();
+  },["catalog-shelves",parentSlug,String(size)],{revalidate:120,tags:["catalog"]})();
 }
