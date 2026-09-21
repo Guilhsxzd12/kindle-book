@@ -1,4 +1,5 @@
 import { NextRequest,NextResponse } from "next/server";
+import { revalidatePath,revalidateTag } from "next/cache";
 import { getApiViewer } from "@/lib/auth";
 import { completeBookRequest } from "@/lib/book-requests";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
@@ -86,6 +87,9 @@ export async function PATCH(request:NextRequest){
       if(body.resolveCorrection===true)patch.published=true;
     }
     const {data,error}=await db.from("books").update(patch).eq("id",id).select("*").single();if(error)return NextResponse.json({error:error.message},{status:400});
+    revalidateTag("catalog",{expire:0});
+    revalidatePath("/biblioteca");
+    if(data.slug)revalidatePath(`/livro/${data.slug}`);
     const requestId=text(body.requestId);const notification=requestId&&data.published?await completeBookRequest(requestId,data):null;
     return NextResponse.json({book:data,notification});
   }catch(error){return NextResponse.json({error:error instanceof Error?error.message:"Erro ao atualizar livro."},{status:400});}
