@@ -54,6 +54,7 @@ export default async function LibraryPage({searchParams}:{searchParams:Promise<L
   const requestedPage=Number.isFinite(parsedPage)&&parsedPage>0?parsedPage:1;
   const pageSize=20;
 
+  const totalBookCountPromise=admin.from("books").select("id",{count:"exact",head:true}).eq("published",true);
   const resultPromise=searchCatalog(supabase,filteredMode
     ?{search:query,category:categoria,author:authorFilter,page:categoryHubMode?1:requestedPage,size:categoryHubMode?30:pageSize,sort:"title"}
     :{size:12,sort:"recent"});
@@ -67,11 +68,11 @@ export default async function LibraryPage({searchParams}:{searchParams:Promise<L
     }))
     :Promise.resolve([]);
 
-  const [result,popularResult,accessedResult,shelves,childResults]=await Promise.all([
-    resultPromise,popularPromise,accessedPromise,homeShelvesPromise,childResultsPromise
+  const [totalBookCountResult,result,popularResult,accessedResult,shelves,childResults]=await Promise.all([
+    totalBookCountPromise,resultPromise,popularPromise,accessedPromise,homeShelvesPromise,childResultsPromise
   ]);
 
-  const totalBooks=result.total;
+  const totalBooks=typeof totalBookCountResult.count==="number"?totalBookCountResult.count:result.total;
   const recent=filteredMode?[]:result.books;
   const featured=recent.filter(book=>book.cover_url).slice(0,4);
   const popular=popularResult?.books||[];
