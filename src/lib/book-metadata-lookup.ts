@@ -4,6 +4,7 @@ export type AutomaticBookMetadata={
   title:string;
   author:string;
   coverUrl:string|null;
+  description:string|null;
   year:number|null;
   pages:number|null;
   language:string|null;
@@ -67,6 +68,7 @@ function scoreCandidate(item:AutomaticBookMetadata,titleHint:string,authorHint:s
   let score=titleScore*100;
   if(!genericAuthor(authorHint)&&!genericAuthor(item.author)){const authorScore=similarity(item.author,authorHint);score+=authorScore*32;if(authorScore<0.25&&titleScore<0.82)score-=30;}
   if(item.coverUrl)score+=12;
+  if(item.description)score+=4;
   if(!genericAuthor(item.author))score+=10;
   const inferred=inferLanguageFromText(titleHint);if(inferred&&item.language===inferred)score+=7;else if(inferred&&item.language&&item.language!==inferred)score-=5;
   if(item.isbn)score+=2;
@@ -85,7 +87,7 @@ async function googleBooks(query:string){
     const payload=await response.json();
     return (payload.items||[]).map((item:any):AutomaticBookMetadata=>{
       const v=item.volumeInfo||{};const isbn=(v.industryIdentifiers||[]).find((x:any)=>x.type==="ISBN_13")?.identifier||(v.industryIdentifiers||[]).find((x:any)=>x.type==="ISBN_10")?.identifier||null;
-      return {title:String(v.title||"").trim(),author:Array.isArray(v.authors)&&v.authors.length?v.authors.join(", "):"Autor não informado",coverUrl:(v.imageLinks?.extraLarge||v.imageLinks?.large||v.imageLinks?.medium||v.imageLinks?.thumbnail||v.imageLinks?.smallThumbnail||null)?.replace("http://","https://")||null,year:yearFrom(v.publishedDate),pages:Number.isFinite(v.pageCount)?Number(v.pageCount):null,language:normalizeLanguage(v.language),isbn:compactIsbn(isbn)||null,categories:Array.isArray(v.categories)?v.categories.slice(0,18):[],source:"google-books",score:0};
+      return {title:String(v.title||"").trim(),author:Array.isArray(v.authors)&&v.authors.length?v.authors.join(", "):"Autor não informado",coverUrl:(v.imageLinks?.extraLarge||v.imageLinks?.large||v.imageLinks?.medium||v.imageLinks?.thumbnail||v.imageLinks?.smallThumbnail||null)?.replace("http://","https://")||null,description:typeof v.description==="string"?v.description.replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim()||null:null,year:yearFrom(v.publishedDate),pages:Number.isFinite(v.pageCount)?Number(v.pageCount):null,language:normalizeLanguage(v.language),isbn:compactIsbn(isbn)||null,categories:Array.isArray(v.categories)?v.categories.slice(0,18):[],source:"google-books",score:0};
     }).filter((item:AutomaticBookMetadata)=>item.title);
   }catch{return [] as AutomaticBookMetadata[];}
 }
@@ -98,7 +100,7 @@ async function openLibrary(title:string,isbn:string|null){
     url.searchParams.set("fields","title,author_name,first_publish_year,cover_i,number_of_pages_median,isbn,subject,language");
     const response=await fetch(url,{headers:{"User-Agent":"EstanteVirtual/2.0"},cache:"no-store",signal:AbortSignal.timeout(7000)});if(!response.ok)return [] as AutomaticBookMetadata[];
     const payload=await response.json();
-    return (payload.docs||[]).map((d:any):AutomaticBookMetadata=>({title:String(d.title||"").trim(),author:Array.isArray(d.author_name)&&d.author_name.length?d.author_name.join(", "):"Autor não informado",coverUrl:d.cover_i?"https://covers.openlibrary.org/b/id/"+d.cover_i+"-L.jpg":null,year:Number(d.first_publish_year)||null,pages:Number(d.number_of_pages_median)||null,language:(()=>{const langs=Array.isArray(d.language)?d.language.map((x:string)=>normalizeLanguage(x)).filter(Boolean):[];const inferred=inferLanguageFromText(title);return inferred&&langs.includes(inferred)?inferred:(langs[0]||null);})(),isbn:Array.isArray(d.isbn)?(d.isbn.find((x:string)=>compactIsbn(x).length===13)||d.isbn[0]||null):null,categories:Array.isArray(d.subject)?d.subject.slice(0,18):[],source:"open-library",score:0})).filter((item:AutomaticBookMetadata)=>item.title);
+    return (payload.docs||[]).map((d:any):AutomaticBookMetadata=>({title:String(d.title||"").trim(),author:Array.isArray(d.author_name)&&d.author_name.length?d.author_name.join(", "):"Autor não informado",coverUrl:d.cover_i?"https://covers.openlibrary.org/b/id/"+d.cover_i+"-L.jpg":null,description:null,year:Number(d.first_publish_year)||null,pages:Number(d.number_of_pages_median)||null,language:(()=>{const langs=Array.isArray(d.language)?d.language.map((x:string)=>normalizeLanguage(x)).filter(Boolean):[];const inferred=inferLanguageFromText(title);return inferred&&langs.includes(inferred)?inferred:(langs[0]||null);})(),isbn:Array.isArray(d.isbn)?(d.isbn.find((x:string)=>compactIsbn(x).length===13)||d.isbn[0]||null):null,categories:Array.isArray(d.subject)?d.subject.slice(0,18):[],source:"open-library",score:0})).filter((item:AutomaticBookMetadata)=>item.title);
   }catch{return [] as AutomaticBookMetadata[];}
 }
 
