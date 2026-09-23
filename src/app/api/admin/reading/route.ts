@@ -52,6 +52,17 @@ async function fieldCounts(){
   return result;
 }
 
+async function analysisCounts(){
+  const db=createAdminSupabaseClient();const statuses=["pending","processing","completed","error","unavailable"] as const;
+  const pairs=await Promise.all(statuses.map(async status=>{
+    const {count}=await db.from("book_analysis_jobs").select("book_id",{count:"exact",head:true}).eq("status",status);
+    return [status,count||0] as const;
+  }));
+  const result=Object.fromEntries(pairs) as Record<string,number>;
+  const {count:total}=await db.from("book_analysis_jobs").select("book_id",{count:"exact",head:true});
+  return {total:total||0,...result};
+}
+
 async function fieldActivity(field:BookReviewField){
   const db=createAdminSupabaseClient();
   const {data:jobs}=await db.from("book_field_review_jobs")
@@ -70,8 +81,8 @@ export async function GET(request:NextRequest){
   if(!await requireAdminApi())return NextResponse.json({error:"Acesso negado."},{status:403});
   const raw=request.nextUrl.searchParams.get("field")||"cover";
   const selectedField=fieldSet.has(raw as BookReviewField)?raw as BookReviewField:"cover";
-  const [stats,items,reviewStats,reviewItems]=await Promise.all([counts(),activity(),fieldCounts(),fieldActivity(selectedField)]);
-  return NextResponse.json({stats,items,reviewStats,reviewItems,selectedField,updatedAt:new Date().toISOString()});
+  const [stats,items,reviewStats,reviewItems,analysisStats]=await Promise.all([counts(),activity(),fieldCounts(),fieldActivity(selectedField),analysisCounts()]);
+  return NextResponse.json({stats,items,reviewStats,reviewItems,analysisStats,selectedField,updatedAt:new Date().toISOString()});
 }
 
 export async function POST(request:NextRequest){
@@ -99,7 +110,7 @@ export async function POST(request:NextRequest){
   if(body.action==="process-field"){
     const field=String(body.field||"") as BookReviewField;
     if(!fieldSet.has(field))return NextResponse.json({error:"Campo de revisão inválido."},{status:400});
-    const limit=Math.max(1,Math.min(3,Number(body.limit)||1));
+    const limit=Math.max(1,Math.min(12,Number(body.limit)||3));
     const results=await processBookFieldReviewBatch(limit,field);
     return NextResponse.json({results});
   }
