@@ -42,8 +42,10 @@ async function findCatalogAuthor(book:Book){
   const {data}=await db.from("books").select("id,title,author").neq("id",book.id).ilike("title",pattern).limit(40);
   const candidates=(data||[]).filter(item=>!suspiciousAuthor(item.author)).map(item=>({...item,score:titleAuthorMatchScore(book.title,item.title)})).filter(item=>item.score>=0.72).sort((a,b)=>b.score-a.score);
   if(!candidates.length)return null;
-  const best=candidates[0];const competing=candidates.find(item=>item.author.trim().toLowerCase()!==best.author.trim().toLowerCase()&&item.score>=best.score-0.04);
-  return competing?null:best.author.trim();
+  const best=candidates[0];const competing=candidates.find(item=>titleAuthorMatchScore(best.author,item.author)<0.82&&item.score>=best.score-0.04);
+  if(competing)return null;
+  const sameAuthor=candidates.filter(item=>titleAuthorMatchScore(best.author,item.author)>=0.82&&item.score>=best.score-0.08).sort((a,b)=>b.author.length-a.author.length);
+  return (sameAuthor[0]?.author||best.author).trim();
 }
 function titleLooksNoisy(value?:string|null){return /(?:z[-_ ]?lib|1lib|canal\s*@|\.(?:pdf|epub)|\s--\s|\bby\s+[A-ZÀ-Ý]|^[\[\{\(]|^\d{1,3}[ _-]+\d{1,3}[ _-]+)/i.test(String(value||""));}
 function shouldImproveTitle(current:string,detected:string,format:string,confidence:string){
