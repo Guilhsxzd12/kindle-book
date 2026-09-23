@@ -155,5 +155,6 @@ export async function identifyBookFromUpload(fileName:string,mimeType:string,byt
     if(!year&&lookup.year)year=lookup.year;if(!pages&&lookup.pages)pages=lookup.pages;if(!language&&lookup.language)language=lookup.language;if(!isbn&&lookup.isbn)isbn=lookup.isbn;
     subjects=Array.from(new Set([...subjects,...lookup.categories])).slice(0,24);coverUrl=lookup.coverUrl;
   }
-  if(!language)language=inferLanguageFromText(title||guess.title);\n  return {title:title||"Livro enviado pelo Telegram",author:author||"Autor não informado",description,year,pages,language,isbn,subjects,coverUrl,embeddedCover:embedded?.embeddedCover||null,confidence};
+  if(!language)language=inferLanguageFromText(title||guess.title);
+  return {title:title||"Livro enviado pelo Telegram",author:author||"Autor não informado",description,year,pages,language,isbn,subjects,coverUrl,embeddedCover:embedded?.embeddedCover||null,confidence};
 }
