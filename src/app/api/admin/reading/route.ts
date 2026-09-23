@@ -63,6 +63,17 @@ async function analysisCounts(){
   return {total:total||0,...result};
 }
 
+async function overview(){
+  const db=createAdminSupabaseClient();
+  const [{data:summary,error:summaryError},{data:recent,error:recentError}]=await Promise.all([
+    db.rpc("get_book_review_overview"),
+    db.rpc("get_recent_fully_reviewed_books",{result_limit:20})
+  ]);
+  if(summaryError)throw new Error(summaryError.message);
+  if(recentError)throw new Error(recentError.message);
+  return {summary:summary||{},recent:recent||[]};
+}
+
 async function fieldActivity(field:BookReviewField){
   const db=createAdminSupabaseClient();
   const {data:jobs}=await db.from("book_field_review_jobs")
@@ -81,8 +92,8 @@ export async function GET(request:NextRequest){
   if(!await requireAdminApi())return NextResponse.json({error:"Acesso negado."},{status:403});
   const raw=request.nextUrl.searchParams.get("field")||"cover";
   const selectedField=fieldSet.has(raw as BookReviewField)?raw as BookReviewField:"cover";
-  const [stats,items,reviewStats,reviewItems,analysisStats]=await Promise.all([counts(),activity(),fieldCounts(),fieldActivity(selectedField),analysisCounts()]);
-  return NextResponse.json({stats,items,reviewStats,reviewItems,analysisStats,selectedField,updatedAt:new Date().toISOString()});
+  const [stats,items,reviewStats,reviewItems,analysisStats,overviewData]=await Promise.all([counts(),activity(),fieldCounts(),fieldActivity(selectedField),analysisCounts(),overview()]);
+  return NextResponse.json({stats,items,reviewStats,reviewItems,analysisStats,overview:overviewData.summary,recentFullyReviewed:overviewData.recent,selectedField,updatedAt:new Date().toISOString()});
 }
 
 export async function POST(request:NextRequest){
