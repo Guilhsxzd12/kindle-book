@@ -12,6 +12,14 @@ function genericAuthor(value?:string|null){
   const v=(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"");
   return !v||v==="autornaoinformado"||v==="autornaoidentificado"||v==="desconhecido"||v==="unknown"||/^\d+[ao]?serie$/i.test(v)||/^(serie|volume|vol|edicao|edition|scan|scanner|adobe|microsoftword|qp)\d*$/i.test(v);
 }
+function suspiciousAuthor(value?:string|null){
+  const raw=String(value||"").replace(/\s+/g," ").trim();if(genericAuthor(raw))return true;
+  if(raw.length>90)return true;
+  if(/\b(?:microsoft|adobe|scanner|digitalizado|editora|publisher|copyright|ebook|arquivo|documento|escrito|written)\b/i.test(raw))return true;
+  if(raw.split(" ").length>6)return true;
+  if(/^[A-ZÀ-Ý]{4,}$/.test(raw))return true;
+  return false;
+}
 function genericTitle(value?:string|null){
   const v=(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
   return !v||/^(sem titulo|livro enviado|livro sem titulo|unknown|arquivo|ebook|pdf)\b/.test(v);
@@ -81,9 +89,9 @@ export async function processBookReadingJob(bookId:string){
       const changes:Record<string,unknown>={};
       const currentLanguage=String(book.language||"").trim().toLowerCase()||null;
       const reliable=identified.languageSource==="metadata"||identified.languageSource==="content";
+      const bookPatch:Record<string,unknown>={};
       if(detectedLanguage&&detectedLanguage!==currentLanguage&&reliable){
-        const {error:updateLanguageError}=await db.from("books").update({language:detectedLanguage,updated_at:new Date().toISOString()}).eq("id",book.id);
-        if(updateLanguageError)throw new Error(updateLanguageError.message);
+        bookPatch.language=detectedLanguage;
         changes.language=jsonChange(currentLanguage,detectedLanguage);
 
         const {data:rows}=await db.from("book_language_files").select("id,language,format,drive_file_id").eq("book_id",book.id);
@@ -93,6 +101,15 @@ export async function processBookReadingJob(bookId:string){
           if(conflict)await db.from("book_language_files").delete().eq("id",row.id);
           else await db.from("book_language_files").update({language:detectedLanguage,updated_at:new Date().toISOString()}).eq("id",row.id);
         }
+      }
+      if(identified.author&&!suspiciousAuthor(identified.author)&&suspiciousAuthor(book.author)){
+        bookPatch.author=identified.author;
+        changes.author=jsonChange(book.author,identified.author);
+      }
+      if(Object.keys(bookPatch).length){
+        bookPatch.updated_at=new Date().toISOString();
+        const {error:updateReviewError}=await db.from("books").update(bookPatch).eq("id",book.id);
+        if(updateReviewError)throw new Error(updateReviewError.message);
       }
       await setJob(bookId,{
         status:"completed",
@@ -125,7 +142,7 @@ export async function processBookReadingJob(bookId:string){
     if(identified.title&&shouldImproveTitle(book.title,identified.title,source.format,identified.confidence)){
       patch.title=identified.title;patch.slug=await uniqueSlug(identified.title,book.id);patch.drive_folder_letter=driveLetter(identified.title);changes.title=jsonChange(book.title,identified.title);
     }
-    if(identified.author&&!genericAuthor(identified.author)&&(genericAuthor(book.author)||(source.format==="epub"&&identified.confidence==="metadata"&&!same(book.author,identified.author)))){
+    if(identified.author&&!suspiciousAuthor(identified.author)&&(suspiciousAuthor(book.author)||(source.format==="epub"&&identified.confidence==="metadata"&&!same(book.author,identified.author)))){
       patch.author=identified.author;changes.author=jsonChange(book.author,identified.author);
     }
 
