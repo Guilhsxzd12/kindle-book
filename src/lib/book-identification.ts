@@ -44,6 +44,14 @@ function inferLanguageFromText(value?:string|null){
 function compactIsbn(value?:string|null){return String(value||"").replace(/[^0-9X]/gi,"").toUpperCase();}
 function extractIsbn(text:string){const match=text.match(/\bISBN(?:-1[03])?\s*:?\s*[\s-]*((?:97[89][\s-]?)?\d[\d\s-]{8,17}[\dX])\b/i);if(!match)return null;const isbn=compactIsbn(match[1]);return /^(?:\d{9}[\dX]|\d{13})$/.test(isbn)?isbn:null;}
 function genericAuthor(value?:string|null){const raw=String(value||"").trim();const v=compact(raw);return !v||v==="autornaoinformado"||v==="autornaoidentificado"||v==="desconhecido"||v==="unknown"||/^\\d+[aªo]?serie$/i.test(v)||/^(serie|volume|vol|edicao|edition|scan|scanner|adobe|microsoftword|qp)\\d*$/i.test(v);}
+function suspiciousAuthor(value?:string|null){
+  const raw=String(value||"").replace(/\s+/g," ").trim();if(genericAuthor(raw))return true;
+  if(raw.length>90)return true;
+  if(/\b(?:microsoft|adobe|scanner|digitalizado|editora|publisher|copyright|ebook|arquivo|documento|escrito|written)\b/i.test(raw))return true;
+  if(raw.split(" ").length>6)return true;
+  if(/^[A-ZÀ-Ý]{4,}$/.test(raw))return true;
+  return false;
+}
 function usefulTitle(value?:string|null){
   if(!value)return null;const v=value.replace(/\s+/g," ").trim();if(v.length<2||v.length>180)return null;
   if(/^(microsoft word|documento|untitled|sem titulo|unknown|arquivo|ebook|pdf)\b/i.test(v))return null;
@@ -167,7 +175,7 @@ export async function identifyBookFromUpload(fileName:string,mimeType:string,byt
   let coverUrl:string|null=null;
   if(lookup){
     if(!embedded?.title&&lookup.title){title=lookup.title;confidence="lookup";}
-    if(genericAuthor(author)&&!genericAuthor(lookup.author))author=lookup.author;
+    if((genericAuthor(author)||(!isEpub&&suspiciousAuthor(author)))&&!suspiciousAuthor(lookup.author))author=lookup.author;
     if(!year&&lookup.year)year=lookup.year;if(!pages&&lookup.pages)pages=lookup.pages;if(!language&&lookup.language){language=lookup.language;languageSource="lookup";}if(!isbn&&lookup.isbn)isbn=lookup.isbn;
     subjects=Array.from(new Set([...subjects,...lookup.categories])).slice(0,24);coverUrl=lookup.coverUrl;
   }
