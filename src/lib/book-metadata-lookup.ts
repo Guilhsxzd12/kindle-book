@@ -17,6 +17,19 @@ function norm(value:string){return value.normalize("NFD").replace(/[\u0300-\u036
 function compactIsbn(value?:string|null){return String(value||"").replace(/[^0-9X]/gi,"").toUpperCase();}
 function normalizeLanguage(value?:string|null){if(!value)return null;const v=value.toLowerCase();const map:Record<string,string>={por:"pt",ptbr:"pt",pt_br:"pt",eng:"en",spa:"es",fre:"fr",fra:"fr",ita:"it",ger:"de",deu:"de",jpn:"ja",chi:"zh",zho:"zh",rus:"ru"};return map[v.replace(/-/g,"_")]||v.split(/[-_]/)[0]||null;}
 function yearFrom(value?:string|null){const m=value?.match(/\b(1[5-9]\d{2}|20\d{2}|21\d{2})\b/);return m?Number(m[1]):null;}
+function inferLanguageFromText(value?:string|null){
+  const words=norm(value||"").split(" ").filter(Boolean);if(!words.length)return null;
+  const sets:Record<string,Set<string>>={
+    pt:new Set(["o","a","os","as","da","do","das","dos","de","e","em","para","com","uma","um","que","como","nao","voce","livro","pessoas","mente","mentes","maneira"]),
+    en:new Set(["the","an","of","and","to","in","for","with","from","your","you","how","why","what","language","library","introduction","guide","handbook","psychology","business","science","history","world","life","love","book","digging","mindfulness"]),
+    es:new Set(["el","la","los","las","del","y","en","para","con","una","un","que","camino","cuerpo","emociones","relajacion","respiracion","eleccion","claves","despertar"]),
+    fr:new Set(["le","la","les","des","du","et","pour","avec","une","un","livre","amour","vie","monde"])
+  };
+  const scores:Record<string,number>={pt:0,en:0,es:0,fr:0};
+  for(const w of words)for(const lang of Object.keys(scores))if(sets[lang].has(w))scores[lang]+=(['the','and','of','del','el','los','las','nao','voce'].includes(w)?4:2);
+  const ranked=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+  return ranked[0][1]>=4&&ranked[0][1]-ranked[1][1]>=2?ranked[0][0]:null;
+}
 function genericAuthor(value?:string|null){const v=norm(value||"");return !v||v==="autor nao informado"||v==="autor nao identificado"||v==="desconhecido"||v==="unknown";}
 
 function levenshtein(a:string,b:string){
