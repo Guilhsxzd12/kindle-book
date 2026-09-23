@@ -79,7 +79,9 @@ async function googleBooks(query:string){
     const url=new URL("https://www.googleapis.com/books/v1/volumes");
     url.searchParams.set("q",query);url.searchParams.set("printType","books");url.searchParams.set("maxResults","40");url.searchParams.set("orderBy","relevance");
     const key=process.env.GOOGLE_BOOKS_API_KEY?.trim();if(key)url.searchParams.set("key",key);
-    const response=await fetch(url,{cache:"no-store",signal:AbortSignal.timeout(7000)});if(!response.ok)return [] as AutomaticBookMetadata[];
+    let response=await fetch(url,{cache:"no-store",signal:AbortSignal.timeout(7000)});
+    if(!response.ok&&key){url.searchParams.delete("key");response=await fetch(url,{cache:"no-store",signal:AbortSignal.timeout(7000)});}
+    if(!response.ok)return [] as AutomaticBookMetadata[];
     const payload=await response.json();
     return (payload.items||[]).map((item:any):AutomaticBookMetadata=>{
       const v=item.volumeInfo||{};const isbn=(v.industryIdentifiers||[]).find((x:any)=>x.type==="ISBN_13")?.identifier||(v.industryIdentifiers||[]).find((x:any)=>x.type==="ISBN_10")?.identifier||null;
