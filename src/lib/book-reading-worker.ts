@@ -58,6 +58,8 @@ export async function processBookReadingJob(bookId:string){
   if(bookError)throw new Error(bookError.message);
   if(!bookData){await setJob(bookId,{status:"error",error:"Livro não encontrado.",completed_at:new Date().toISOString()});return {bookId,status:"error" as JobStatus};}
   const book=bookData as Book;
+  const {data:jobModeRow}=await db.from("book_reading_jobs").select("mode").eq("book_id",bookId).maybeSingle();
+  const mode=jobModeRow?.mode==="language"?"language":"full";
   const source=chooseSource(book);
   if(!source){
     const reasons=[genericTitle(book.title)?"Título não identificado":null,genericAuthor(book.author)?"Autor não identificado":null].filter(Boolean);
@@ -73,6 +75,38 @@ export async function processBookReadingJob(bookId:string){
     if(length>120*1024*1024)throw new Error("Arquivo maior que 120 MB; leitura automática foi ignorada para proteger o servidor.");
     const bytes=new Uint8Array(await response.arrayBuffer());
     const identified=await identifyBookFromUpload(source.name,source.mime,bytes,{title:book.title,author:book.author});
+
+    if(mode==="language"){
+      const detectedLanguage=String(identified.language||"").trim().toLowerCase()||null;
+      const changes:Record<string,unknown>={};
+      const currentLanguage=String(book.language||"").trim().toLowerCase()||null;
+      const reliable=identified.languageSource==="metadata"||identified.languageSource==="content";
+      if(detectedLanguage&&detectedLanguage!==currentLanguage&&reliable){
+        const {error:updateLanguageError}=await db.from("books").update({language:detectedLanguage,updated_at:new Date().toISOString()}).eq("id",book.id);
+        if(updateLanguageError)throw new Error(updateLanguageError.message);
+        changes.language=jsonChange(currentLanguage,detectedLanguage);
+
+        const {data:rows}=await db.from("book_language_files").select("id,language,format,drive_file_id").eq("book_id",book.id);
+        const sourceRows=(rows||[]).filter(row=>row.drive_file_id===source.id&&String(row.language||"").toLowerCase()!==detectedLanguage);
+        for(const row of sourceRows){
+          const conflict=(rows||[]).find(other=>other.id!==row.id&&other.format===row.format&&String(other.language||"").toLowerCase()===detectedLanguage);
+          if(conflict)await db.from("book_language_files").delete().eq("id",row.id);
+          else await db.from("book_language_files").update({language:detectedLanguage,updated_at:new Date().toISOString()}).eq("id",row.id);
+        }
+      }
+      await setJob(bookId,{
+        status:"completed",
+        detected_title:identified.title,
+        detected_author:identified.author,
+        detected_isbn:identified.isbn,
+        detected_language:detectedLanguage,
+        confidence:identified.languageSource||identified.confidence,
+        changes,
+        error:null,
+        completed_at:new Date().toISOString()
+      });
+      return {bookId,status:"completed" as JobStatus,title:book.title,language:detectedLanguage,languageSource:identified.languageSource,changes};
+    }
 
     const {data:categoryRows}=await db.from("categories").select("id,name,slug,parent_id").order("name");
     const categories=(categoryRows||[]) as Category[];
@@ -124,7 +158,12 @@ export async function processBookReadingJob(bookId:string){
 
     if(!book.year&&identified.year){patch.year=identified.year;changes.year=jsonChange(null,identified.year);}
     if(!book.pages&&identified.pages){patch.pages=identified.pages;changes.pages=jsonChange(null,identified.pages);}
-    if(!book.language&&identified.language){patch.language=identified.language;changes.language=jsonChange(null,identified.language);}
+    if(identified.language){
+      const currentLanguage=String(book.language||"").trim().toLowerCase()||null;
+      const detectedLanguage=String(identified.language).trim().toLowerCase();
+      const reliable=identified.languageSource==="metadata"||identified.languageSource==="content";
+      if(!currentLanguage||(reliable&&currentLanguage!==detectedLanguage)){patch.language=detectedLanguage;changes.language=jsonChange(currentLanguage,detectedLanguage);}
+    }
     if(canImproveCategory&&detectedCategoryId){patch.category_id=detectedCategoryId;changes.category=jsonChange(currentCategory?.name||null,detectedCategoryName||detectedCategoryId);}
 
     const finalTitle=String(patch.title??book.title);
@@ -158,6 +197,7 @@ export async function processBookReadingJob(bookId:string){
       detected_title:identified.title,
       detected_author:identified.author,
       detected_isbn:identified.isbn,
+      detected_language:identified.language,
       detected_category_id:detectedCategoryId,
       detected_category_name:detectedCategoryName,
       confidence:identified.confidence,
