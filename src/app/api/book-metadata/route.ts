@@ -102,7 +102,8 @@ async function googleBooks(query:string,{ebooks=false,lang}:{ebooks?:boolean;lan
   if(ebooks)url.searchParams.set("filter","ebooks");
   if(lang)url.searchParams.set("langRestrict",lang);
   const key=process.env.GOOGLE_BOOKS_API_KEY?.trim();if(key)url.searchParams.set("key",key);
-  const r=await externalFetch(url,{cache:"no-store"});
+  let r=await externalFetch(url,{cache:"no-store"});
+  if(!r.ok&&key){url.searchParams.delete("key");r=await externalFetch(url,{cache:"no-store"});}
   if(!r.ok)return [] as BookMetadataResult[];
   const p=await r.json();
   return (p.items||[]).map((item:any):BookMetadataResult=>{
