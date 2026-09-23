@@ -25,7 +25,21 @@ function stripTags(value?:string|null){if(!value)return null;const decoded=decod
 function compact(value:string){return value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"");}
 function yearFrom(value?:string|null){const m=value?.match(/\b(1[5-9]\d{2}|20\d{2}|21\d{2})\b/);return m?Number(m[1]):null;}
 function normalizeLanguage(value?:string|null){if(!value)return null;const v=value.trim().toLowerCase().replace(/_/g,"-");if(v.startsWith("pt")||v==="por")return "pt";if(v.startsWith("en")||v==="eng")return "en";if(v.startsWith("es")||v==="spa")return "es";return v.split("-")[0]||null;}
-function inferLanguageFromText(value?:string|null){const words=compact(String(value||"")).replace(/([a-z])([A-Z])/g,"$1 $2").split(/[^a-z0-9]+/).filter(Boolean);const raw=String(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();const tokens=raw.match(/[a-z0-9]+/g)||words;const sets:Record<string,Set<string>>={pt:new Set(["o","a","os","as","da","do","das","dos","de","e","em","para","com","uma","um","que","como","nao","voce","livro","pessoas","mente","mentes","maneira"]),en:new Set(["the","an","of","and","to","in","for","with","from","your","you","how","why","what","language","library","introduction","guide","handbook","psychology","business","science","history","world","life","love","book","digging","mindfulness"]),es:new Set(["el","la","los","las","del","y","en","para","con","una","un","que","camino","cuerpo","emociones","relajacion","respiracion","eleccion","claves","despertar"])};const scores:Record<string,number>={pt:0,en:0,es:0};for(const w of tokens)for(const lang of Object.keys(scores))if(sets[lang].has(w))scores[lang]+=(["the","and","of","del","el","los","las","nao","voce"].includes(w)?4:2);const ranked=Object.entries(scores).sort((a,b)=>b[1]-a[1]);return ranked[0][1]>=4&&ranked[0][1]-ranked[1][1]>=2?ranked[0][0]:null;}
+function inferLanguageFromText(value?:string|null){
+  const raw=String(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+  const tokens=raw.match(/[a-z0-9]+/g)||[];if(!tokens.length)return null;
+  const sets:Record<string,Set<string>>={
+    pt:new Set(["o","a","os","as","um","uma","uns","umas","de","da","do","das","dos","e","em","no","na","nos","nas","para","por","com","sem","que","como","mais","menos","muito","muita","muitos","muitas","nao","sim","se","seu","sua","seus","suas","voce","ele","ela","eles","elas","isso","isto","tambem","quando","onde","porque","sobre","entre","livro","capitulo"]),
+    en:new Set(["the","a","an","of","and","to","in","for","with","from","on","at","by","as","is","are","was","were","be","been","this","that","these","those","you","your","he","she","they","we","it","not","but","or","if","when","where","why","how","what","which","who","more","most","book","chapter","introduction","language"]),
+    es:new Set(["el","la","los","las","un","una","unos","unas","de","del","y","en","para","por","con","sin","que","como","mas","menos","muy","no","si","su","sus","usted","ustedes","el","ella","ellos","ellas","esto","eso","tambien","cuando","donde","porque","sobre","entre","libro","capitulo"]),
+    fr:new Set(["le","la","les","un","une","des","de","du","et","en","dans","pour","par","avec","sans","que","comme","plus","moins","tres","ne","pas","vous","il","elle","ils","elles","ce","cette","ces","aussi","quand","ou","pourquoi","sur","entre","livre","chapitre"])
+  };
+  const scores:Record<string,number>={pt:0,en:0,es:0,fr:0};
+  for(const w of tokens)for(const lang of Object.keys(scores))if(sets[lang].has(w))scores[lang]++;
+  const ranked=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+  const min=tokens.length>=80?6:tokens.length>=25?4:2;
+  return ranked[0][1]>=min&&ranked[0][1]>=ranked[1][1]*1.35?ranked[0][0]:null;
+}
 function compactIsbn(value?:string|null){return String(value||"").replace(/[^0-9X]/gi,"").toUpperCase();}
 function extractIsbn(text:string){const match=text.match(/\bISBN(?:-1[03])?\s*:?\s*[\s-]*((?:97[89][\s-]?)?\d[\d\s-]{8,17}[\dX])\b/i);if(!match)return null;const isbn=compactIsbn(match[1]);return /^(?:\d{9}[\dX]|\d{13})$/.test(isbn)?isbn:null;}
 function genericAuthor(value?:string|null){const raw=String(value||"").trim();const v=compact(raw);return !v||v==="autornaoinformado"||v==="autornaoidentificado"||v==="desconhecido"||v==="unknown"||/^\\d+[aªo]?serie$/i.test(v)||/^(serie|volume|vol|edicao|edition|scan|scanner|adobe|microsoftword|qp)\\d*$/i.test(v);}
@@ -136,7 +150,8 @@ async function pdfMetadata(bytes:Uint8Array){
     const pageCount=Math.min(pdf.numPages||0,8);
     for(let pageNo=1;pageNo<=pageCount;pageNo++){try{const page=await pdf.getPage(pageNo);const text=await page.getTextContent();for(const item of text.items as any[]){const str=typeof item?.str==="string"?item.str.trim():"";if(str)lines.push(str);}}catch{}}
     const content=contentCandidates(lines);const title=usefulTitle(rawTitle)||content.title;const author=!genericAuthor(rawAuthor)?rawAuthor:(content.author||null);
-    const result={title,author,description:null as string|null,year:yearFrom(creation),pages:pdf.numPages||null,language:null as string|null,isbn:content.isbn,subjects:[] as string[],embeddedCover:null as EmbeddedBookCover|null,usedContent:!usefulTitle(rawTitle)&&Boolean(content.title)};
+    const detectedLanguage=inferLanguageFromText(lines.slice(0,900).join(" "));
+    const result={title,author,description:null as string|null,year:yearFrom(creation),pages:pdf.numPages||null,language:detectedLanguage,isbn:content.isbn,subjects:[] as string[],embeddedCover:null as EmbeddedBookCover|null,usedContent:!usefulTitle(rawTitle)&&Boolean(content.title)};
     await loading.destroy();return result;
   }catch{return null;}
 }
