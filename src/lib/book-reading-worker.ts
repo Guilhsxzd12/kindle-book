@@ -26,6 +26,25 @@ function genericTitle(value?:string|null){
 }
 function same(a?:string|null,b?:string|null){return String(a||"").trim()===String(b||"").trim();}
 function titleNorm(value?:string|null){return String(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").replace(/\s+/g," ").trim();}
+function titleAuthorMatchScore(a?:string|null,b?:string|null){
+  const x=titleNorm(a),y=titleNorm(b);if(!x||!y)return 0;if(x===y)return 1;
+  if(x.startsWith(y+" ")||y.startsWith(x+" ")||x.includes(y)||y.includes(x))return 0.94;
+  const xw=new Set(x.split(" ").filter(w=>w.length>2));const yw=new Set(y.split(" ").filter(w=>w.length>2));
+  if(!xw.size||!yw.size)return 0;
+  let hits=0;for(const w of xw)if(yw.has(w))hits++;
+  return hits/Math.min(xw.size,yw.size);
+}
+async function findCatalogAuthor(book:Book){
+  const db=createAdminSupabaseClient();
+  const words=titleNorm(book.title).split(" ").filter(w=>w.length>2).slice(0,3);
+  if(words.length<2)return null;
+  const pattern="%"+words.join("%")+"%";
+  const {data}=await db.from("books").select("id,title,author").neq("id",book.id).ilike("title",pattern).limit(40);
+  const candidates=(data||[]).filter(item=>!suspiciousAuthor(item.author)).map(item=>({...item,score:titleAuthorMatchScore(book.title,item.title)})).filter(item=>item.score>=0.72).sort((a,b)=>b.score-a.score);
+  if(!candidates.length)return null;
+  const best=candidates[0];const competing=candidates.find(item=>item.author.trim().toLowerCase()!==best.author.trim().toLowerCase()&&item.score>=best.score-0.04);
+  return competing?null:best.author.trim();
+}
 function titleLooksNoisy(value?:string|null){return /(?:z[-_ ]?lib|1lib|canal\s*@|\.(?:pdf|epub)|\s--\s|\bby\s+[A-ZÀ-Ý]|^[\[\{\(]|^\d{1,3}[ _-]+\d{1,3}[ _-]+)/i.test(String(value||""));}
 function shouldImproveTitle(current:string,detected:string,format:string,confidence:string){
   if(genericTitle(current))return true;
@@ -102,9 +121,12 @@ export async function processBookReadingJob(bookId:string){
           else await db.from("book_language_files").update({language:detectedLanguage,updated_at:new Date().toISOString()}).eq("id",row.id);
         }
       }
-      if(identified.author&&!suspiciousAuthor(identified.author)&&suspiciousAuthor(book.author)){
-        bookPatch.author=identified.author;
-        changes.author=jsonChange(book.author,identified.author);
+      if(suspiciousAuthor(book.author)){
+        const reviewedAuthor=identified.author&&!suspiciousAuthor(identified.author)?identified.author:await findCatalogAuthor(book);
+        if(reviewedAuthor&&!suspiciousAuthor(reviewedAuthor)&&!same(book.author,reviewedAuthor)){
+          bookPatch.author=reviewedAuthor;
+          changes.author=jsonChange(book.author,reviewedAuthor);
+        }
       }
       if(Object.keys(bookPatch).length){
         bookPatch.updated_at=new Date().toISOString();
@@ -144,6 +166,9 @@ export async function processBookReadingJob(bookId:string){
     }
     if(identified.author&&!suspiciousAuthor(identified.author)&&(suspiciousAuthor(book.author)||(source.format==="epub"&&identified.confidence==="metadata"&&!same(book.author,identified.author)))){
       patch.author=identified.author;changes.author=jsonChange(book.author,identified.author);
+    }else if(suspiciousAuthor(book.author)){
+      const catalogAuthor=await findCatalogAuthor(book);
+      if(catalogAuthor&&!same(book.author,catalogAuthor)){patch.author=catalogAuthor;changes.author=jsonChange(book.author,catalogAuthor);}
     }
 
     let automaticCoverUrl:string|null=null;
