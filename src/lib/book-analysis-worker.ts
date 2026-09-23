@@ -76,8 +76,8 @@ export async function processBookAnalysisJob(bookId:string){
     const detectedCategoryId=guessCategoryId(categories,identified.subjects||[],identified.title,identified.description||"",detectedAuthor||book.author);
     const detectedCategory=categories.find(item=>item.id===detectedCategoryId)||null;
 
-    let coverUrl:string|null=null;let coverSource:string|null=null;
-    if(identified.embeddedCover){
+    let coverUrl:string|null=book.cover_url||null;let coverSource:string|null=book.cover_url?"existing":null;
+    if(!coverUrl&&identified.embeddedCover){
       try{
         const ext=identified.embeddedCover.extension||"jpg";
         const uploaded=await uploadCatalogCoverBytes(book.id+"-analysis-cover."+ext,identified.embeddedCover.bytes,identified.embeddedCover.mimeType);
