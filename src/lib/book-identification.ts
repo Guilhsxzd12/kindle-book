@@ -11,6 +11,7 @@ export type IdentifiedBook={
   year:number|null;
   pages:number|null;
   language:string|null;
+  languageSource:"metadata"|"content"|"lookup"|"title"|null;
   isbn:string|null;
   subjects:string[];
   coverUrl:string|null;
@@ -160,16 +161,16 @@ export async function identifyBookFromUpload(fileName:string,mimeType:string,byt
   const guess=filenameGuess(fileName);const isEpub=mimeType==="application/epub+zip"||fileName.toLowerCase().endsWith(".epub");const embedded=isEpub?await epubMetadata(bytes):await pdfMetadata(bytes);
   const hintedTitle=usefulTitle(cleanTitleNoise(String(hints?.title||"")));
   let title=embedded?.title?.trim()||hintedTitle||guess.title;let author=embedded?.author?.trim()||(!genericAuthor(hints?.author)?String(hints?.author).trim():guess.author);
-  let description=embedded?.description||null;let year=embedded?.year||null;let pages=embedded?.pages||null;let language=embedded?.language||null;let isbn=embedded?.isbn||null;let subjects=embedded?.subjects||[];
+  let description=embedded?.description||null;let year=embedded?.year||null;let pages=embedded?.pages||null;let language=embedded?.language||null;let languageSource:IdentifiedBook["languageSource"]=language?(isEpub?"metadata":"content"):null;let isbn=embedded?.isbn||null;let subjects=embedded?.subjects||[];
   const usedContent=Boolean(embedded&&"usedContent" in embedded&&embedded.usedContent);let confidence:IdentifiedBook["confidence"]=embedded?.title?(usedContent?"content":"metadata"):(hintedTitle?"catalog":"filename");
   const lookup=await lookupBookMetadata({title:title||guess.title,author:isEpub?author:(hints?.author||author),isbn});
   let coverUrl:string|null=null;
   if(lookup){
     if(!embedded?.title&&lookup.title){title=lookup.title;confidence="lookup";}
     if(genericAuthor(author)&&!genericAuthor(lookup.author))author=lookup.author;
-    if(!year&&lookup.year)year=lookup.year;if(!pages&&lookup.pages)pages=lookup.pages;if(!language&&lookup.language)language=lookup.language;if(!isbn&&lookup.isbn)isbn=lookup.isbn;
+    if(!year&&lookup.year)year=lookup.year;if(!pages&&lookup.pages)pages=lookup.pages;if(!language&&lookup.language){language=lookup.language;languageSource="lookup";}if(!isbn&&lookup.isbn)isbn=lookup.isbn;
     subjects=Array.from(new Set([...subjects,...lookup.categories])).slice(0,24);coverUrl=lookup.coverUrl;
   }
-  if(!language)language=inferLanguageFromText(title||guess.title);
-  return {title:title||"Livro enviado pelo Telegram",author:author||"Autor não informado",description,year,pages,language,isbn,subjects,coverUrl,embeddedCover:embedded?.embeddedCover||null,confidence};
+  if(!language){language=inferLanguageFromText(title||guess.title);if(language)languageSource="title";}
+  return {title:title||"Livro enviado pelo Telegram",author:author||"Autor não informado",description,year,pages,language,languageSource,isbn,subjects,coverUrl,embeddedCover:embedded?.embeddedCover||null,confidence};
 }
