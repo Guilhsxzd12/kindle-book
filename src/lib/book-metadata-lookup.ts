@@ -41,7 +41,8 @@ function levenshtein(a:string,b:string){
 function similarity(a:string,b:string){
   const x=norm(a),y=norm(b);if(!x||!y)return 0;if(x===y)return 1;
   const longest=Math.max(x.length,y.length);let score=1-levenshtein(x,y)/longest;
-  if(x.includes(y)||y.includes(x))score=Math.max(score,Math.min(x.length,y.length)/longest+0.16);
+  if(x.startsWith(y+" ")||y.startsWith(x+" "))score=Math.max(score,0.94);
+  else if(x.includes(y)||y.includes(x))score=Math.max(score,Math.min(x.length,y.length)/longest+0.16);
   const xWords=new Set(x.split(" ").filter(w=>w.length>2));const yWords=[...new Set(y.split(" ").filter(w=>w.length>2))];
   if(yWords.length){const hits=yWords.filter(w=>xWords.has(w)).length;score=Math.max(score,hits/yWords.length*0.9);}
   return Math.max(0,Math.min(1,score));
