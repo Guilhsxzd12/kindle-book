@@ -7,7 +7,7 @@ export const dynamic="force-dynamic";
 const allowed=new Set<BookReviewField>(["cover","author","category","title","description","language"]);
 
 export async function GET(request:NextRequest){
-  const limit=Math.max(1,Math.min(3,Number(request.nextUrl.searchParams.get("limit"))||2));
+  const limit=Math.max(1,Math.min(20,Number(request.nextUrl.searchParams.get("limit"))||12));
   const raw=request.nextUrl.searchParams.get("field")||"";
   const field=allowed.has(raw as BookReviewField)?raw as BookReviewField:null;
   const started=Date.now();
