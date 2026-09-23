@@ -25,6 +25,7 @@ export function ReadingDashboard(){
   const [active,setActive]=useState(true);
   const [working,setWorking]=useState(false);
   const [error,setError]=useState("");
+  const [languageMessage,setLanguageMessage]=useState("");
   const stopped=useRef(false);
 
   async function refresh(){
@@ -77,6 +78,16 @@ export function ReadingDashboard(){
     const json=await response.json();if(!response.ok){setError(json.error||"Não foi possível reenfileirar.");return;}await refresh();
   }
 
+  async function reviewLanguages(){
+    if(!confirm("Revisar o idioma de todo o acervo? O sistema vai abrir novamente os PDF/EPUB concluídos e corrigir apenas idiomas identificados com segurança."))return;
+    setLanguageMessage("Preparando revisão de idiomas...");
+    const response=await fetch("/api/admin/reading",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"review-languages"})});
+    const json=await response.json();
+    if(!response.ok){setError(json.error||"Não foi possível iniciar a revisão.");setLanguageMessage("");return;}
+    setLanguageMessage(`🌎 Revisão iniciada: ${Number(json.queued||0).toLocaleString("pt-BR")} livros reenfileirados.`);
+    await refresh();
+  }
+
   return <section className="reading-dashboard">
     <div className="reading-hero card panel">
       <div>
@@ -87,10 +98,12 @@ export function ReadingDashboard(){
       <div className="reading-controls">
         <span className={`reading-live ${active?"on":""}`}><i/>{working?"Lendo agora":"Monitoramento ativo"}</span>
         <button type="button" className={active?"btn ghost":"btn"} onClick={()=>setActive(value=>!value)}>{active?"Pausar nesta tela":"Continuar leitura"}</button>
+        <button type="button" className="btn ghost" onClick={()=>void reviewLanguages()}>🌎 Revisar idiomas</button>
       </div>
     </div>
 
     {error&&<div className="notice">{error}</div>}
+    {languageMessage&&<div className="notice">{languageMessage}</div>}
 
     <div className="reading-stats">
       <article className="card"><span>Total no acervo</span><strong>{stats.total.toLocaleString("pt-BR")}</strong><small>livros acompanhados</small></article>
