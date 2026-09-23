@@ -50,6 +50,12 @@ export async function POST(request:NextRequest){
     return NextResponse.json({ok:true});
   }
 
+  if(body.action==="review-languages"){
+    const {data,error}=await db.rpc("queue_all_books_for_language_review");
+    if(error)return NextResponse.json({error:error.message},{status:400});
+    return NextResponse.json({ok:true,queued:Number(data||0)});
+  }
+
   const limit=Math.max(1,Math.min(3,Number(body.limit)||1));
   const results=await processBookReadingBatch(limit);
   return NextResponse.json({results});
