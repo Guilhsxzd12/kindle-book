@@ -168,7 +168,8 @@ async function pdfMetadata(bytes:Uint8Array){
 export async function identifyBookFromUpload(fileName:string,mimeType:string,bytes:Uint8Array,hints?:{title?:string|null;author?:string|null}):Promise<IdentifiedBook>{
   const guess=filenameGuess(fileName);const isEpub=mimeType==="application/epub+zip"||fileName.toLowerCase().endsWith(".epub");const embedded=isEpub?await epubMetadata(bytes):await pdfMetadata(bytes);
   const hintedTitle=usefulTitle(cleanTitleNoise(String(hints?.title||"")));
-  let title=embedded?.title?.trim()||hintedTitle||guess.title;let author=embedded?.author?.trim()||(!genericAuthor(hints?.author)?String(hints?.author).trim():guess.author);
+  const embeddedUsedContent=Boolean(embedded&&"usedContent" in embedded&&embedded.usedContent);
+  let title=(!isEpub&&embeddedUsedContent&&hintedTitle)?hintedTitle:(embedded?.title?.trim()||hintedTitle||guess.title);let author=embedded?.author?.trim()||(!genericAuthor(hints?.author)?String(hints?.author).trim():guess.author);
   let description=embedded?.description||null;let year=embedded?.year||null;let pages=embedded?.pages||null;let language=embedded?.language||null;let languageSource:IdentifiedBook["languageSource"]=language?(isEpub?"metadata":"content"):null;let isbn=embedded?.isbn||null;let subjects=embedded?.subjects||[];
   const usedContent=Boolean(embedded&&"usedContent" in embedded&&embedded.usedContent);let confidence:IdentifiedBook["confidence"]=embedded?.title?(usedContent?"content":"metadata"):(hintedTitle?"catalog":"filename");
   const lookup=await lookupBookMetadata({title:title||guess.title,author:isEpub?author:(hints?.author||author),isbn});
