@@ -13,6 +13,7 @@ type FieldItem={
 type Payload={
   reviewStats:Record<Field,Stats>;
   reviewItems:FieldItem[];
+  analysisStats:Stats;
   selectedField:Field;
   updatedAt:string;
 };
@@ -115,12 +116,12 @@ export function ReadingDashboard(){
     <div className="reading-hero card panel">
       <div>
         <span className="eyebrow">LEITURA AUTOMÁTICA DO ACERVO</span>
-        <h2>Revisão separada por conteúdo</h2>
-        <p>Escolha exatamente o que o sistema deve procurar. Cada fila trabalha apenas naquele dado e não mexe nos demais campos do livro.</p>
+        <h2>1 leitura do arquivo → 6 verificações</h2>
+        <p>O leitor central abre no máximo 4 livros ao mesmo tempo, extrai capa, autor, categoria, título, sinopse e idioma em uma única análise e reaproveita esse resultado nas seis filas.</p>
       </div>
       <div className="reading-controls">
-        <span className={`reading-live ${active?"on":""}`}><i/>{working?"Processando agora":"Aceleração ativa"}</span>
-        <button type="button" className={active?"btn ghost":"btn"} onClick={()=>setActive(value=>!value)}>{active?"Pausar aceleração":"Acelerar nesta tela"}</button>
+        <span className={`reading-live ${active?"on":""}`}><i/>{working?"Aplicando resultados":"Atualização ao vivo"}</span>
+        <button type="button" className={active?"btn ghost":"btn"} onClick={()=>setActive(value=>!value)}>{active?"Pausar aplicação ao vivo":"Aplicar resultados ao vivo"}</button>
       </div>
     </div>
 
@@ -135,6 +136,13 @@ export function ReadingDashboard(){
 
     {error&&<div className="notice">{error}</div>}
     {message&&<div className="notice success">{message}</div>}
+
+    <div className="reading-stats">
+      <article className="card"><span>Leitor central</span><strong>{(data?.analysisStats?.processing||0).toLocaleString("pt-BR")} / 4</strong><small>arquivos abertos simultaneamente</small></article>
+      <article className="card"><span>Aguardando leitura</span><strong>{(data?.analysisStats?.pending||0).toLocaleString("pt-BR")}</strong><small>uma leitura servirá às 6 abas</small></article>
+      <article className="card"><span>Análises prontas</span><strong>{(data?.analysisStats?.completed||0).toLocaleString("pt-BR")}</strong><small>resultados reaproveitáveis</small></article>
+      <article className="card"><span>Falhas de leitura</span><strong>{(data?.analysisStats?.error||0).toLocaleString("pt-BR")}</strong><small>arquivos que falharam após tentativas</small></article>
+    </div>
 
     <div className="card panel">
       <div className="panel-title">
@@ -155,7 +163,7 @@ export function ReadingDashboard(){
     <div className="reading-progress card">
       <div className="reading-progress-head"><strong>Progresso — {config.label}</strong><span>{stats.completed.toLocaleString("pt-BR")} / {processable.toLocaleString("pt-BR")}</span></div>
       <div className="reading-progress-track"><i style={{width:`${Math.min(100,percent)}%`}}/></div>
-      <small>O servidor continua essa fila mesmo com a aba fechada. Abrir esta tela acelera especificamente a revisão de {config.label.toLowerCase()}.</small>
+      <small>O servidor continua mesmo com a aba fechada. O arquivo é lido uma única vez pelo leitor central e esta aba apenas aplica o resultado de {config.label.toLowerCase()}.</small>
     </div>
 
     <div className="reading-columns">
@@ -185,6 +193,6 @@ export function ReadingDashboard(){
       </section>
     </div>
 
-    <div className="reading-footnote">Última sincronização: {time(data?.updatedAt)} • cada guia mantém uma fila independente.</div>
+    <div className="reading-footnote">Última sincronização: {time(data?.updatedAt)} • filas independentes na interface, leitura compartilhada por trás • limite central: 4 arquivos simultâneos.</div>
   </section>;
 }
