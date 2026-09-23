@@ -178,6 +178,7 @@ export async function identifyBookFromUpload(fileName:string,mimeType:string,byt
   if(lookup){
     if(!embedded?.title&&lookup.title){title=lookup.title;confidence="lookup";}
     if((genericAuthor(author)||(!isEpub&&suspiciousAuthor(author)))&&!suspiciousAuthor(lookup.author))author=lookup.author;
+    if(!description&&lookup.description)description=lookup.description;
     if(!year&&lookup.year)year=lookup.year;if(!pages&&lookup.pages)pages=lookup.pages;if(!language&&lookup.language){language=lookup.language;languageSource="lookup";}if(!isbn&&lookup.isbn)isbn=lookup.isbn;
     subjects=Array.from(new Set([...subjects,...lookup.categories])).slice(0,24);coverUrl=lookup.coverUrl;
   }
