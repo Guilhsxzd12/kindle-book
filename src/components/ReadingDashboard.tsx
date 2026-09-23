@@ -79,12 +79,12 @@ export function ReadingDashboard(){
   }
 
   async function reviewLanguages(){
-    if(!confirm("Revisar o idioma de todo o acervo? O sistema vai abrir novamente os PDF/EPUB concluídos e corrigir apenas idiomas identificados com segurança."))return;
+    if(!confirm("Revisar idiomas e autores de todo o acervo? O sistema vai abrir novamente os PDF/EPUB concluídos e corrigir apenas dados identificados com segurança."))return;
     setLanguageMessage("Preparando revisão de idiomas...");
     const response=await fetch("/api/admin/reading",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"review-languages"})});
     const json=await response.json();
     if(!response.ok){setError(json.error||"Não foi possível iniciar a revisão.");setLanguageMessage("");return;}
-    setLanguageMessage(`🌎 Revisão iniciada: ${Number(json.queued||0).toLocaleString("pt-BR")} livros reenfileirados.`);
+    setLanguageMessage(`🌎✍️ Revisão iniciada: ${Number(json.queued||0).toLocaleString("pt-BR")} livros reenfileirados.`);
     await refresh();
   }
 
@@ -98,7 +98,7 @@ export function ReadingDashboard(){
       <div className="reading-controls">
         <span className={`reading-live ${active?"on":""}`}><i/>{working?"Lendo agora":"Monitoramento ativo"}</span>
         <button type="button" className={active?"btn ghost":"btn"} onClick={()=>setActive(value=>!value)}>{active?"Pausar nesta tela":"Continuar leitura"}</button>
-        <button type="button" className="btn ghost" onClick={()=>void reviewLanguages()}>🌎 Revisar idiomas</button>
+        <button type="button" className="btn ghost" onClick={()=>void reviewLanguages()}>🌎✍️ Revisar idiomas e autores</button>
       </div>
     </div>
 
