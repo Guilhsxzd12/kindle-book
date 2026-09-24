@@ -24,6 +24,7 @@ function text(value:unknown){return String(value||"").trim();}
 function genericAuthor(value:string){const v=value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"");return !v||["autornaoinformado","autornaoidentificado","desconhecido","unknown"].includes(v)||/^\d+[ao]?serie$/i.test(v);}
 function genericTitle(value:string){const v=value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();return !v||/^(sem titulo|livro enviado|livro sem titulo|unknown|arquivo|ebook|pdf)\b/.test(v);}
 function optionalNumber(value:unknown){if(value===""||value===null||value===undefined)return null;const number=Number(value);return Number.isFinite(number)?number:null;}
+function refreshCatalog(slug?:string|null){revalidateTag("catalog",{expire:0});revalidatePath("/");revalidatePath("/biblioteca");if(slug)revalidatePath(`/livro/${slug}`);}
 
 function filePatch(body:any){
   const driveFileId=text(body.driveFileId);const fileName=text(body.fileName);const mimeType=text(body.mimeType).toLowerCase();
@@ -48,6 +49,7 @@ export async function POST(request:NextRequest){
     const payload={title,slug:await uniqueSlug(title),author,description:description||null,language:text(body.language).toLowerCase()||null,category_id:text(body.categoryId)||null,year,pages,cover_url:coverUrl,drive_folder_letter:driveLetter(title),allow_download:true,published:body.published!==false,updated_at:now,metadata_reviewed:body.metadataReviewed!==false,...files};
     const db=createAdminSupabaseClient();const {data,error}=await db.from("books").insert(payload).select("*").single();
     if(error)return NextResponse.json({error:error.message},{status:400});
+    refreshCatalog(data.slug);
     const requestId=text(body.requestId);const notification=requestId&&data.published?await completeBookRequest(requestId,data):null;
     return NextResponse.json({book:data,notification});
   }catch(error){return NextResponse.json({error:error instanceof Error?error.message:"Erro ao salvar livro."},{status:400});}
@@ -87,9 +89,7 @@ export async function PATCH(request:NextRequest){
       if(body.resolveCorrection===true)patch.published=true;
     }
     const {data,error}=await db.from("books").update(patch).eq("id",id).select("*").single();if(error)return NextResponse.json({error:error.message},{status:400});
-    revalidateTag("catalog",{expire:0});
-    revalidatePath("/biblioteca");
-    if(data.slug)revalidatePath(`/livro/${data.slug}`);
+    refreshCatalog(data.slug);
     const requestId=text(body.requestId);const notification=requestId&&data.published?await completeBookRequest(requestId,data):null;
     return NextResponse.json({book:data,notification});
   }catch(error){return NextResponse.json({error:error instanceof Error?error.message:"Erro ao atualizar livro."},{status:400});}
@@ -98,6 +98,12 @@ export async function PATCH(request:NextRequest){
 export async function DELETE(request:NextRequest){
   const viewer=await admin();if(!viewer)return NextResponse.json({error:"Acesso negado."},{status:403});
   const id=request.nextUrl.searchParams.get("id");if(!id)return NextResponse.json({error:"ID obrigatório."},{status:400});
-  const db=createAdminSupabaseClient();const {error}=await db.from("books").delete().eq("id",id);
-  return error?NextResponse.json({error:error.message},{status:400}):NextResponse.json({ok:true});
+  const db=createAdminSupabaseClient();
+  const {data:before,error:lookupError}=await db.from("books").select("slug").eq("id",id).maybeSingle();
+  if(lookupError)return NextResponse.json({error:lookupError.message},{status:400});
+  if(!before)return NextResponse.json({error:"Livro não encontrado."},{status:404});
+  const {error}=await db.from("books").delete().eq("id",id);
+  if(error)return NextResponse.json({error:error.message},{status:400});
+  refreshCatalog(before.slug);
+  return NextResponse.json({ok:true});
 }
