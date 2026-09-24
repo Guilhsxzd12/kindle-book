@@ -5,7 +5,14 @@ export const maxDuration=300;
 export const dynamic="force-dynamic";
 
 export async function GET(request:NextRequest){
-  const limit=Math.max(1,Math.min(4,Number(request.nextUrl.searchParams.get("limit"))||4));
+  // O processamento pesado pertence ao worker local do LeituraVerso.
+  // Na Vercel esta rota fica intencionalmente inativa para não consumir
+  // memória/CPU do site público nem derrubar o catálogo.
+  if(process.env.VERCEL){
+    return NextResponse.json({ok:true,processed:0,delegatedTo:"local-worker"});
+  }
+
+  const limit=Math.max(1,Math.min(1,Number(request.nextUrl.searchParams.get("limit"))||1));
   const started=Date.now();
   try{
     const results=await processBookAnalysisBatch(limit);
