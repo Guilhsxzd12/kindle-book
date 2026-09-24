@@ -130,8 +130,12 @@ export async function claimAnalysisJobs(limit=4){
   return ids;
 }
 
-export async function processBookAnalysisBatch(limit=4){
+export async function processBookAnalysisBatch(limit=1){
   const ids=await claimAnalysisJobs(limit);
   if(!ids.length)return [];
-  return Promise.all(ids.map(id=>processBookAnalysisJob(id)));
+  const results=[];
+  // Processamento deliberadamente sequencial: cada PDF/EPUB pode ser grande
+  // e manter vários arquivos na memória ao mesmo tempo derrubava a Vercel.
+  for(const id of ids)results.push(await processBookAnalysisJob(id));
+  return results;
 }
