@@ -1,6 +1,7 @@
 -- Corrige o publicador automático do catálogo do Telegram.
 -- Em vez de varrer apenas os 1.000 livros mais antigos, retorna diretamente
 -- os livros que ainda possuem algum canal/arquivo pendente.
+-- Falhas recentes recebem backoff para não prender a fila nos mesmos livros.
 
 create or replace function public.telegram_catalog_pending_books(p_limit integer default 5)
 returns table(id uuid, title text, created_at timestamptz)
@@ -43,16 +44,20 @@ as $$
       left join public.telegram_channel_publications p
         on p.book_id = c.id
        and p.channel_id = ch.id
-      where p.id is null
-         or p.status <> 'sent'
-         or (
-           p.text_message_id is null
-           and (
-             (c.epub_id is not null and p.epub_message_id is null)
-             or
-             (c.pdf_id is not null and p.pdf_message_id is null)
-           )
-         )
+      where
+        p.id is null
+        or (p.status = 'pending' and p.updated_at < now() - interval '10 minutes')
+        or (p.status = 'partial' and p.updated_at < now() - interval '10 minutes')
+        or (p.status = 'failed' and p.updated_at < now() - interval '30 minutes')
+        or (
+          p.status = 'sent'
+          and p.text_message_id is null
+          and (
+            (c.epub_id is not null and p.epub_message_id is null)
+            or
+            (c.pdf_id is not null and p.pdf_message_id is null)
+          )
+        )
     )
   order by c.created_at desc
   limit greatest(1, least(coalesce(p_limit, 5), 20));
