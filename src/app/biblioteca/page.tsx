@@ -55,12 +55,12 @@ export default async function LibraryPage({searchParams}:{searchParams:Promise<L
   const pageSize=20;
 
   const totalBookCountPromise=admin.from("books").select("id",{count:"exact",head:true}).eq("published",true);
-  const resultPromise=searchCatalog(supabase,filteredMode
+  const resultPromise=searchCatalog(filteredMode?supabase:admin,filteredMode
     ?{search:query,category:categoria,author:authorFilter,page:categoryHubMode?1:requestedPage,size:categoryHubMode?30:pageSize,sort:"title"}
     :{size:12,sort:"recent"});
   const popularPromise=filteredMode?Promise.resolve(null):searchCatalog(admin,{size:12,sort:"popular"});
   const accessedPromise=filteredMode?Promise.resolve(null):searchCatalog(admin,{size:12,sort:"views"});
-  const homeShelvesPromise=filteredMode?Promise.resolve({} as CatalogShelfMap):catalogShelves(supabase,"",12);
+  const homeShelvesPromise=filteredMode?Promise.resolve({} as CatalogShelfMap):catalogShelves(admin,"",12);
   const childResultsPromise=categoryHubMode&&childCategories.length
     ?Promise.all(childCategories.map(async category=>{
       const childResult=await searchCatalog(supabase,{category:category.slug,page:1,size:30,sort:"title"});
@@ -118,7 +118,7 @@ export default async function LibraryPage({searchParams}:{searchParams:Promise<L
           <div className="search-result-head"><BackToPrevious/><h1>{query?`Resultados para “${query}”`:authorFilter?authorFilter:selectedCategory?.name||"Todos os livros"}</h1><p>{result.total} {result.total===1?"livro encontrado":"livros encontrados"}{selectedCategory?` em ${selectedCategory.name}`:""}{result.total>pageSize?` • página ${currentPage} de ${totalPages}`:""}.</p></div>
           {result.total?<><div className="book-grid shelf-grid search-books-grid">{pagedFiltered.map(book=><BookCard key={book.id} book={book} isAdmin={isAdmin}/>)}</div>{totalPages>1&&<nav className="catalog-pagination" aria-label="Paginação do acervo">{currentPage>1&&<Link className="pagination-arrow" href={urlWith(activeBase,{pagina:String(currentPage-1)})} aria-label="Página anterior">←</Link>}{pageItems.map((item,index)=>typeof item==="number"?<Link key={item} className={`pagination-page ${item===currentPage?"active":""}`} href={urlWith(activeBase,{pagina:String(item)})} aria-current={item===currentPage?"page":undefined}>{item}</Link>:<span className="pagination-ellipsis" key={`ellipsis-${index}`}>…</span>)}{currentPage<totalPages&&<Link className="pagination-arrow" href={urlWith(activeBase,{pagina:String(currentPage+1)})} aria-label="Próxima página">→</Link>}</nav>}</>:<div className="empty-state"><h3>Nenhum livro encontrado</h3><p>Tente outro título, autor ou categoria.</p><Link className="btn ghost" href="/biblioteca">Limpar busca</Link></div>}
         </section>
-      </div>):<div className="category-sections">{homeCategories.map(category=>{const books=shelves[category.id]||[];if(!books.length)return null;return <section className="category-block" key={category.id}><div className="category-title"><div><span className="eyebrow">COLEÇÃO</span><h3>{category.name}</h3></div><Link href={`/biblioteca?categoria=${encodeURIComponent(category.slug)}`}>Ver todos <span>→</span></Link></div><HorizontalBookSlider>{books.map(book=><BookCard key={book.id} book={book} isAdmin={isAdmin}/>)}</HorizontalBookSlider></section>;})}</div>}
+      </div>):<section className="library-section category-home-section"><div className="section-heading"><div><span className="eyebrow">EXPLORE O ACERVO</span><h2>Categorias principais</h2><p>Deslize cada coleção para conhecer os livros das principais categorias do catálogo.</p></div></div><div className="category-sections">{homeCategories.map(category=>{const books=shelves[category.id]||[];if(!books.length)return null;return <section className="category-block" key={category.id}><div className="category-title"><div><span className="eyebrow">COLEÇÃO</span><h3>{category.name}</h3></div><Link href={`/biblioteca?categoria=${encodeURIComponent(category.slug)}`}>Ver todos <span>→</span></Link></div><HorizontalBookSlider>{books.map(book=><BookCard key={book.id} book={book} isAdmin={isAdmin}/>)}</HorizontalBookSlider></section>;})}</div></section>}
     </div>
   </main></AppShell>;
 }
