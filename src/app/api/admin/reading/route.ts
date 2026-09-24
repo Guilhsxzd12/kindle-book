@@ -121,7 +121,9 @@ export async function POST(request:NextRequest){
   if(body.action==="process-field"){
     const field=String(body.field||"") as BookReviewField;
     if(!fieldSet.has(field))return NextResponse.json({error:"Campo de revisão inválido."},{status:400});
-    const limit=Math.max(1,Math.min(12,Number(body.limit)||3));
+    // Em produção o painel apenas acompanha a fila; o PC local aplica os resultados.
+    if(process.env.VERCEL)return NextResponse.json({results:[],delegatedTo:"local-worker"});
+    const limit=Math.max(1,Math.min(2,Number(body.limit)||1));
     const results=await processBookFieldReviewBatch(limit,field);
     return NextResponse.json({results});
   }
