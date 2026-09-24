@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "start:worker-host": "next start -H 127.0.0.1 -p 3030",
+    "worker:pc": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/leituraverso-worker.ps1"
   },
   "dependencies": {
     "@sparticuz/chromium": "149.0.0",
