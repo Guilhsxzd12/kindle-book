@@ -8,23 +8,28 @@ const fields:BookReviewField[]=["cover","author","category","title","description
 const allowed=new Set<BookReviewField>(fields);
 
 export async function GET(request:NextRequest){
-  const limit=Math.max(1,Math.min(24,Number(request.nextUrl.searchParams.get("limit"))||12));
+  // A aplicação das revisões em lote também fica no worker local.
+  if(process.env.VERCEL){
+    return NextResponse.json({ok:true,processed:0,delegatedTo:"local-worker"});
+  }
+
+  const limit=Math.max(1,Math.min(6,Number(request.nextUrl.searchParams.get("limit"))||6));
   const raw=request.nextUrl.searchParams.get("field")||"";
   const field=allowed.has(raw as BookReviewField)?raw as BookReviewField:null;
   const started=Date.now();
   try{
     if(field){
-      const results=await processBookFieldReviewBatch(limit,field);
+      const results=await processBookFieldReviewBatch(Math.min(limit,2),field);
       return NextResponse.json({ok:true,processed:results.length,results,elapsedMs:Date.now()-started});
     }
 
-    // Sem uma aba específica, distribui o lote igualmente entre as seis filas.
-    // Assim Capas, Autores, Categorias, Títulos, Sinopses e Idioma avançam juntas.
+    // Processa as seis filas em sequência, nunca em paralelo.
+    // Isso evita rajadas de consultas e mantém o uso de memória previsível.
+    const grouped:{field:BookReviewField;results:Awaited<ReturnType<typeof processBookFieldReviewBatch>>}[]=[];
     const perField=Math.max(1,Math.floor(limit/fields.length));
-    const grouped=await Promise.all(fields.map(async current=>({
-      field:current,
-      results:await processBookFieldReviewBatch(perField,current)
-    })));
+    for(const current of fields){
+      grouped.push({field:current,results:await processBookFieldReviewBatch(perField,current)});
+    }
     const results=grouped.flatMap(group=>group.results);
     return NextResponse.json({
       ok:true,
