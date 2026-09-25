@@ -17,14 +17,28 @@ async function runCatalogSearch(db:SupabaseClient, options:{search?:string;categ
 }
 
 export async function searchCatalog(db:SupabaseClient, options:{search?:string;category?:string;author?:string;page?:number;size?:number;sort?:"title"|"recent"|"popular"|"views"}={}){
-  const isPublicRequest=!options.search&&!options.category&&!options.author;
-  if(!isPublicRequest) return runCatalogSearch(db,options);
-
+  const filtered=Boolean(options.search||options.category||options.author);
   return unstable_cache(
     ()=>runCatalogSearch(db,options),
-    ["catalog-search",JSON.stringify(options)],
-    {revalidate:120,tags:["catalog"]}
+    ["catalog-search-v3",JSON.stringify(options)],
+    {revalidate:filtered?30:120,tags:["catalog"]}
   )();
+}
+
+export async function catalogCategories(db:SupabaseClient){
+  return unstable_cache(async()=>{
+    const {data,error}=await db.from("categories").select("id,name,slug,parent_id,sort_order").order("sort_order").order("name");
+    if(error){console.error("[catalog_categories]",{code:error.code,message:error.message});throw new Error("Não foi possível carregar as categorias.");}
+    return data||[];
+  },["catalog-categories-v1"],{revalidate:600,tags:["catalog"]})();
+}
+
+export async function catalogBookCount(db:SupabaseClient){
+  return unstable_cache(async()=>{
+    const {count,error}=await db.from("books").select("id",{count:"exact",head:true}).eq("published",true);
+    if(error){console.error("[catalog_book_count]",{code:error.code,message:error.message});return 0;}
+    return count||0;
+  },["catalog-book-count-v1"],{revalidate:60,tags:["catalog"]})();
 }
 
 export async function catalogAuthors(db:SupabaseClient){
