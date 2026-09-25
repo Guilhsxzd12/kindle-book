@@ -1,4 +1,5 @@
 import {NextRequest,NextResponse} from "next/server";
+import {touchLocalWorker} from "@/lib/local-worker-heartbeat";
 import {processBookFieldReviewBatch,type BookReviewField} from "@/lib/book-field-review-worker";
 
 export const maxDuration=300;
@@ -12,6 +13,7 @@ export async function GET(request:NextRequest){
   if(process.env.VERCEL){
     return NextResponse.json({ok:true,processed:0,delegatedTo:"local-worker"});
   }
+  await touchLocalWorker();
 
   const limit=Math.max(1,Math.min(6,Number(request.nextUrl.searchParams.get("limit"))||6));
   const raw=request.nextUrl.searchParams.get("field")||"";
