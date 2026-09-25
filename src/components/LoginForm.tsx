@@ -17,9 +17,9 @@ export function LoginForm({next,created=false}:{next?:string;created?:boolean}){
     }catch(error){setMessage(error instanceof Error?error.message:"Usuário ou senha incorretos.");}finally{setLoading(false);}
   }
   const contactTitle=contactMode==="password"?"Recuperar acesso":"Comprar acesso";
-  const contactText=contactMode==="password"?"Escolha onde prefere falar para recuperar sua senha.":"Escolha onde prefere falar para comprar seu acesso ao Kindle Books.";
+  const contactText=contactMode==="password"?"Escolha onde prefere falar para recuperar sua senha.":"Escolha onde prefere falar para comprar seu acesso ao LeituraVerso.";
   return <div className="oda-login-shell">
-    <div className="oda-login-brand"><img src="/kindle-books-logo-footer.svg" alt="KINDLE BOOKS"/></div>
+    <div className="oda-login-brand"><img src="/kindle-books-logo-footer.svg" alt="LEITURAVERSO"/></div>
     <section className="oda-login-card">
       <div className="oda-login-intro"><h1>Bem-vindo!</h1><p>Recebeu um código de acesso? <a className="oda-inline-link" href="/criar-conta">Crie seu usuário aqui</a>.</p><p>Caso já possua cadastro, faça o login abaixo.</p></div>
       <form className="oda-login-form" action={submit}>
@@ -33,7 +33,7 @@ export function LoginForm({next,created=false}:{next?:string;created?:boolean}){
       <a className="oda-register-button" href="/criar-conta">Criar usuário com código</a>
       <p className="oda-forgot">Ainda não tem acesso? <button type="button" className="oda-inline-link" onClick={()=>setContactMode("access")}>Fale com o atendimento</button>. Esqueceu sua senha? Recupere-a <button type="button" className="oda-inline-link" onClick={()=>setContactMode("password")}>aqui</button>.</p>
     </section>
-    <p className="oda-login-footer">KINDLE BOOKS · sua biblioteca digital</p>
+    <p className="oda-login-footer">LEITURAVERSO · sua biblioteca digital</p>
 
     {contactMode&&<div className="oda-contact-backdrop" role="presentation" onClick={()=>setContactMode(null)}>
       <div className="oda-contact-modal" role="dialog" aria-modal="true" aria-labelledby="contact-title" onClick={e=>e.stopPropagation()}>

@@ -1,12 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 120" role="img" aria-labelledby="title desc">
-  <title id="title">KINDLE BOOKS</title><desc id="desc">Símbolo de livro aberto com monograma K e nome Kindle Books</desc>
-  <g transform="translate(8 10)">
-    <rect x="0" y="0" width="100" height="100" rx="24" fill="#8f3f2e"/>
-    <path d="M20 28c15-7 29-5 39 4v46c-10-9-24-11-39-4V28Z" fill="#fffdf8"/>
-    <path d="M80 28c-15-7-29-5-39 4v46c10-9 24-11 39-4V28Z" fill="#f4e9df"/>
-    <path d="M41 32v46" stroke="#8f3f2e" stroke-width="3"/>
-    <path d="M52 38v33M52 55l18-18M52 55l19 18" stroke="#304b3d" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 300" role="img" aria-labelledby="title desc">
+  <title id="title">LeituraVerso</title>
+  <desc id="desc">Logo LeituraVerso com jovem lendo sobre um livro aberto</desc>
+  <rect width="900" height="300" fill="#5D0B38"/>
+  <g fill="#FFF4DF">
+    <path d="M34 224c66-34 132-34 195 1 62-36 125-36 191 0-69-16-132-4-191 35-57-39-122-51-195-36Z"/>
+    <path d="M42 205c60-31 122-29 183 5l4 13c-61-33-123-36-187-9Z"/>
+    <path d="M418 205c-61-31-123-29-184 5l-4 13c61-33 123-36 188-9Z"/>
+    <circle cx="144" cy="76" r="28"/>
+    <path d="M123 103c18-11 43-6 52 14l18 45 35 10-7 18-48-12-19-32-14 34-36 17-13-15 31-24 1-55Z"/>
+    <path d="M165 118c22 6 38 21 50 38l-13 12c-13-16-27-26-44-31Z"/>
+    <path d="M204 148l46-25 13 31-46 27Z"/>
+    <path d="M136 173c27 1 47 13 61 36l-17 12c-12-18-28-27-49-28Z"/>
+    <path d="M181 211c25-1 48 4 69 14l-10 15c-19-8-39-12-60-11Z"/>
   </g>
-  <text x="132" y="56" font-family="Georgia, 'Times New Roman', serif" font-size="42" font-weight="700" fill="#241c18" letter-spacing="1">KINDLE</text>
-  <text x="132" y="93" font-family="Arial, Helvetica, sans-serif" font-size="27" font-weight="800" fill="#8f3f2e" letter-spacing="7">BOOKS</text>
+  <text x="355" y="146" font-family="Georgia, 'Times New Roman', serif" font-size="92" font-weight="700" fill="#FFF4DF" letter-spacing="1">LEITURA</text>
+  <text x="392" y="222" font-family="Arial, Helvetica, sans-serif" font-size="50" font-weight="600" fill="#FFF4DF" letter-spacing="20">VERSO</text>
 </svg>

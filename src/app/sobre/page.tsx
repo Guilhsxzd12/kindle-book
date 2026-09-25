@@ -1,16 +1,16 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "Sobre | Estante Virtual",
-  description: "Informações sobre a Estante Virtual e seu uso do Google Drive."
+  title: "Sobre | LeituraVerso",
+  description: "Informações sobre a LeituraVerso e seu uso do Google Drive."
 };
 
 export default function AboutPage() {
   return (
     <main style={{maxWidth:900,margin:"0 auto",padding:"48px 24px",fontFamily:"system-ui, sans-serif",lineHeight:1.65}}>
-      <h1>Estante Virtual</h1>
+      <h1>LeituraVerso</h1>
       <p>
-        A Estante Virtual é uma biblioteca digital privada para organização e distribuição de livros digitais.
+        A LeituraVerso é uma biblioteca digital privada para organização e distribuição de livros digitais.
         Usuários autorizados podem pesquisar o acervo, salvar favoritos e baixar arquivos nos formatos disponíveis.
       </p>
       <p>
@@ -23,7 +23,7 @@ export default function AboutPage() {
         {" · "}
         <Link href="/termos-de-servico">Termos de Serviço</Link>
       </p>
-      <p><Link href="/login">Entrar na Estante Virtual</Link></p>
+      <p><Link href="/login">Entrar na LeituraVerso</Link></p>
     </main>
   );
 }

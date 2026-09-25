@@ -4,7 +4,7 @@ import { AppShell } from "@/components/AppShell";
 const faqs=[
   {q:"Como baixo um livro?",a:"Abra o título desejado e escolha o formato. O PDF é baixado diretamente. No EPUB, você pode escolher uma capa alternativa ou enviar uma imagem do seu dispositivo antes de baixar ou compartilhar com o Kindle."},
   {q:"Qual é a diferença entre PDF e EPUB?",a:"O PDF mantém a página com diagramação fixa. O EPUB adapta o texto à tela e é o formato mais indicado para Kindle e outros leitores digitais."},
-  {q:"Consigo ler o livro dentro do site?",a:"Não. A KINDLE BOOKS funciona como acervo para download. Depois de baixar, abra o arquivo em um aplicativo de leitura, como Kindle, Google Play Livros, Apple Books ou Calibre."},
+  {q:"Consigo ler o livro dentro do site?",a:"Não. A LeituraVerso funciona como acervo para download. Depois de baixar, abra o arquivo em um aplicativo de leitura, como Kindle, Google Play Livros, Apple Books ou Calibre."},
   {q:"Como envio um EPUB para o Kindle?",a:"Na página do livro, escolha Baixar EPUB / Kindle. Você poderá selecionar uma das capas disponíveis ou enviar outra capa. O site incorpora essa imagem ao EPUB e depois oferece o download ou o compartilhamento com o app Kindle. Mais abaixo nesta página há um tutorial em vídeo mostrando o método Send to Kindle."},
   {q:"Posso enviar um livro para entrar no acervo?",a:"Não. Somente o administrador adiciona e publica os arquivos. Caso queira um título específico, faça um pedido pelo formulário do site ou pelo bot do Telegram."},
   {q:"Como faço um pedido de livro?",a:"Use a aba Pedir livro no site e informe título, autor e idioma. Se preferir, faça o mesmo pelo bot do Telegram. Os dois caminhos chegam à mesma fila de pedidos do administrador."},

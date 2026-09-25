@@ -60,7 +60,7 @@ export default async function ConhecimentoPage(){
       <div>
         <span className={styles.eyebrow}>🧠 INTELIGÊNCIA DO ACERVO</span>
         <h1 className={styles.title}>Base de conhecimento</h1>
-        <p className={styles.subtitle}>O Kindle Books varre continuamente todo o acervo, compara cada livro com a base local, Google Books e Open Library e só considera a revisão completa quando título, autor, sinopse, capa válida, idioma, ano, páginas e classificação estão consistentes. Se o livro já estiver correto, ele simplesmente pula.</p>
+        <p className={styles.subtitle}>O LeituraVerso varre continuamente todo o acervo, compara cada livro com a base local, Google Books e Open Library e só considera a revisão completa quando título, autor, sinopse, capa válida, idioma, ano, páginas e classificação estão consistentes. Se o livro já estiver correto, ele simplesmente pula.</p>
         <div className={styles.heroActions}>
           <form action={processKnowledgeNow}><button className={styles.primaryButton} type="submit">⚡ Processar e auditar agora</button></form>
           <Link className={styles.secondaryButton} href="/admin">← Voltar ao painel</Link>
@@ -85,7 +85,7 @@ export default async function ConhecimentoPage(){
       <div className={styles.sectionHead}><div><h2>Como o reconhecimento funciona</h2><p>O robô não trabalha só nos pendentes: ele percorre todo o catálogo e volta a conferir os livros em ciclos.</p></div><span className={styles.badge}>{manual} precisam de decisão humana</span></div>
       <div className={styles.pipeline}>
         <article className={styles.step}><span className={styles.stepNumber}>1</span><h3>Audita cada livro</h3><p>Compara o registro atual, o nome do arquivo e o conhecimento já vinculado. Se já estiver certo, não altera nada.</p></article>
-        <article className={styles.step}><span className={styles.stepNumber}>2</span><h3>Consulta a base local</h3><p>Se o Kindle Books já conhece a obra, usa os dados validados e verifica o que ainda está faltando.</p></article>
+        <article className={styles.step}><span className={styles.stepNumber}>2</span><h3>Consulta a base local</h3><p>Se o LeituraVerso já conhece a obra, usa os dados validados e verifica o que ainda está faltando.</p></article>
         <article className={styles.step}><span className={styles.stepNumber}>3</span><h3>Confirma em fontes externas</h3><p>Quando necessário, compara Google Books e Open Library e só aceita resultados com confiança suficiente.</p></article>
         <article className={styles.step}><span className={styles.stepNumber}>4</span><h3>Corrige o livro de verdade</h3><p>Sinopse, capa, ano, páginas, idioma, categoria e subcategoria são enviados ao registro do catálogo, não ficam apenas na base de conhecimento.</p></article>
       </div>

@@ -105,7 +105,7 @@ export function telegramMainKeyboard(){
     [{text:"🔎 BAIXAR LIVRO",callback_data:"action_download"},{text:"📝 PEDIR LIVRO",callback_data:"action_request"}],
     [{text:"🕘 HISTÓRICO",callback_data:"show_history"}],
     [{text:"💳 MINHA ASSINATURA",callback_data:"show_subscription"}],
-    [{text:"🌐 ABRIR KINDLE BOOKS",url:`${PUBLIC_SITE_URL}/biblioteca`}],
+    [{text:"🌐 ABRIR LEITURAVERSO",url:`${PUBLIC_SITE_URL}/biblioteca`}],
     [{text:"🚪 SAIR / TROCAR CONTA",callback_data:"action_logout"}]
   ]};
 }

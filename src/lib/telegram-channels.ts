@@ -18,7 +18,7 @@ function normalize(value:string){return value.normalize("NFD").replace(/[\u0300-
 function isPortuguese(value:unknown){const language=normalize(String(value??"").trim());return language==="pt"||language==="pt-br"||language==="pt_br"||language==="portugues"||language.startsWith("pt-");}
 function isPublicationChat(type?:string){return !type||type==="channel"||type==="supergroup";}
 function telegramFileName(title:string,author:string,extension:"epub"|"pdf"){
-  const base=`${title} - ${author}`.replace(/[\\/:*?"<>|]+/g,"-").replace(/\s+/g," ").trim().slice(0,180)||"Kindle Books";
+  const base=`${title} - ${author}`.replace(/[\\/:*?"<>|]+/g,"-").replace(/\s+/g," ").trim().slice(0,180)||"LeituraVerso";
   return `${base}.${extension}`;
 }
 function bookEpub(book:any){
@@ -31,7 +31,7 @@ function bookPdf(book:any){
 }
 
 export function telegramChannelWelcomeText(){
-  return `📚 <b>Kindle Books conectado!</b>\n\nEste canal foi reconhecido pelo bot e está pronto para receber os novos livros publicados no acervo.\n\n📚 Os canais recebem os livros disponíveis no acervo.\n📱 EPUB para Kindle e aplicativos compatíveis.\n📄 PDF para celular, tablet ou computador.\n\n🌐 <a href="${PUBLIC_SITE_URL}/biblioteca">Acessar o Kindle Books</a>\n\nBoa leitura! 🤍`;
+  return `📚 <b>LeituraVerso conectado!</b>\n\nEste canal foi reconhecido pelo bot e está pronto para receber os novos livros publicados no acervo.\n\n📚 Os canais recebem os livros disponíveis no acervo.\n📱 EPUB para Kindle e aplicativos compatíveis.\n📄 PDF para celular, tablet ou computador.\n\n🌐 <a href="${PUBLIC_SITE_URL}/biblioteca">Acessar o LeituraVerso</a>\n\nBoa leitura! 🤍`;
 }
 
 async function nextRole(title:string):Promise<ChannelRole|null>{

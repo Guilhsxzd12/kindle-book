@@ -29,7 +29,7 @@ export function AccountSettings({initialProfile}:{initialProfile:Profile}){
       <form className="account-settings-form" onSubmit={submit}>
         <div className="account-form-grid">
           <label>Nome<input value={draft.fullName} onChange={e=>setDraft(d=>({...d,fullName:e.target.value}))} autoComplete="name" required minLength={2}/></label>
-          <label>Nome de usuário<input value={draft.username} onChange={e=>setDraft(d=>({...d,username:e.target.value}))} autoComplete="username" minLength={3} required/><small>Use este nome para entrar no Kindle Books.</small></label>
+          <label>Nome de usuário<input value={draft.username} onChange={e=>setDraft(d=>({...d,username:e.target.value}))} autoComplete="username" minLength={3} required/><small>Use este nome para entrar no LeituraVerso.</small></label>
         </div>
         <div className="account-password-box">
           <div><strong>Segurança</strong><p className="muted">Deixe os campos de nova senha vazios se não quiser alterá-la.</p></div>
