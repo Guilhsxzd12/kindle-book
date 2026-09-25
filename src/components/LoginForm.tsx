@@ -19,7 +19,7 @@ export function LoginForm({next,created=false}:{next?:string;created?:boolean}){
   const contactTitle=contactMode==="password"?"Recuperar acesso":"Comprar acesso";
   const contactText=contactMode==="password"?"Escolha onde prefere falar para recuperar sua senha.":"Escolha onde prefere falar para comprar seu acesso ao LeituraVerso.";
   return <div className="oda-login-shell">
-    <div className="oda-login-brand"><img src="/kindle-books-logo-footer.svg" alt="LEITURAVERSO"/></div>
+    <div className="oda-login-brand"><img src="/leituraverso-logo.svg" alt="LEITURAVERSO"/></div>
     <section className="oda-login-card">
       <div className="oda-login-intro"><h1>Bem-vindo!</h1><p>Recebeu um código de acesso? <a className="oda-inline-link" href="/criar-conta">Crie seu usuário aqui</a>.</p><p>Caso já possua cadastro, faça o login abaixo.</p></div>
       <form className="oda-login-form" action={submit}>

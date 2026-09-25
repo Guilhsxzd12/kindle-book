@@ -25,7 +25,7 @@ export function CreateAccountForm({initialCode=""}:{initialCode?:string}){
   }
 
   return <div className="oda-login-shell">
-    <div className="oda-login-brand"><img src="/kindle-books-logo-footer.svg" alt="LEITURAVERSO"/></div>
+    <div className="oda-login-brand"><img src="/leituraverso-logo.svg" alt="LEITURAVERSO"/></div>
     <section className="oda-login-card">
       <div className="oda-login-intro"><span className="eyebrow">NOVO ACESSO</span><h1>Crie seu usuário</h1><p>Use o código que você recebeu após a confirmação do pagamento. Não é necessário informar e-mail.</p></div>
       <form className="oda-login-form" onSubmit={submit}>

@@ -38,7 +38,7 @@ export async function AppShell({children,allowInactive=false}:{children:React.Re
     <NavigationProgress/>
     <header className="app-header store-header capsule-store-header">
       <div className="header-capsule shell-width">
-        <Link className="brand brand-logo capsule-brand" href="/biblioteca" aria-label="LeituraVerso — início"><img src="/kindle-books-logo-light.svg" alt="LEITURAVERSO"/></Link>
+        <Link className="brand brand-logo capsule-brand" href="/biblioteca" aria-label="LeituraVerso — início"><img src="/leituraverso-logo.svg" alt="LEITURAVERSO"/></Link>
 
         <nav className="header-nav capsule-nav" aria-label="Navegação do catálogo">
           <Link href="/biblioteca">Início</Link>
