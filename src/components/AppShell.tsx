@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { catalogAuthors } from "@/lib/catalog";
+import { catalogAuthors,catalogCategories } from "@/lib/catalog";
 import { redirect } from "next/navigation";
 import { getViewer,requireApproved } from "@/lib/auth";
 import { AccountMenu } from "@/components/AccountMenu";
+import { CatalogSearchBox } from "@/components/CatalogSearchBox";
 import { NavigationProgress } from "@/components/HorizontalBookSlider";
 import { SiteFooter } from "@/components/SiteFooter";
 import type { Category,Profile } from "@/lib/types";
@@ -23,8 +24,8 @@ export async function AppShell({children,allowInactive=false}:{children:React.Re
   if(!viewer.user)redirect("/login");
   if(!viewer.profile)redirect("/aguardando-aprovacao");
   const profile=viewer.profile as Profile;const supabase=viewer.supabase;const admin=profile.role==="admin";
-  const [{data:categoryData},authorData]=await Promise.all([
-    supabase.from("categories").select("id,name,slug,parent_id,sort_order").order("sort_order").order("name"),
+  const [categoryData,authorData]=await Promise.all([
+    catalogCategories(supabase),
     catalogAuthors(supabase)
   ]);
   const allCategories=(categoryData||[]) as Category[];
@@ -56,7 +57,7 @@ export async function AppShell({children,allowInactive=false}:{children:React.Re
           {admin&&<Link href="/admin">Admin</Link>}
         </nav>
 
-        <form className="header-search store-search capsule-search" action="/biblioteca" method="get"><Icon name="search"/><input name="q" placeholder="Livro ou autor..." aria-label="Pesquisar livros"/><button type="submit">Buscar</button></form>
+        <CatalogSearchBox className="header-search store-search capsule-search" placeholder="Livro ou autor..." showIcon/>
         <Link className="header-request-btn capsule-request" href="/pedido"><Icon name="request"/>Pedir livro</Link>
         <AccountMenu fullName={profile.full_name} email={profile.email} username={profile.username}/>
         <Link className="mobile-header-request" href="/pedido" aria-label="Pedir livro"><Icon name="request"/><span>PEDIR LIVRO</span></Link>
@@ -64,7 +65,7 @@ export async function AppShell({children,allowInactive=false}:{children:React.Re
         <details className="capsule-mobile-menu">
           <summary aria-label="Abrir menu"><Icon name="menu"/></summary>
           <div className="capsule-mobile-panel">
-            <form className="mobile-capsule-search" action="/biblioteca" method="get"><Icon name="search"/><input name="q" placeholder="Pesquisar livro ou autor..." aria-label="Pesquisar livros"/><button type="submit">Buscar</button></form>
+            <CatalogSearchBox className="mobile-capsule-search" placeholder="Pesquisar livro ou autor..." showIcon/>
             <nav aria-label="Menu móvel">
               <Link href="/biblioteca">Início</Link>
               <details className="mobile-menu-group"><summary>Categorias <Icon name="chevron"/></summary><div>{categoryLinks}</div></details>
