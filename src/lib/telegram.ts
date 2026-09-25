@@ -1,7 +1,7 @@
 import "server-only";
 import { createHash } from "crypto";
 import { getSiteOrigin } from "@/lib/google-drive";
-import { SITE_NAME } from "@/lib/site";
+import { ADMIN_TELEGRAM_USERNAME,SITE_NAME } from "@/lib/site";
 
 export const TELEGRAM_MAX_INCOMING_BYTES=20*1024*1024;
 export const TELEGRAM_MAX_OUTGOING_BYTES=50*1024*1024;
@@ -119,7 +119,7 @@ export function telegramWelcomeKeyboard(){
 
 export function telegramBackToMenuKeyboard(){return {inline_keyboard:[[{text:"↩️ Voltar ao menu",callback_data:"show_menu"}]]};}
 export function paymentUrl(){return process.env.SUBSCRIPTION_PAYMENT_URL?.trim()||"";}
-export function receiptUsername(){return (process.env.PAYMENT_RECEIPT_USERNAME?.trim()||"guilh2026").replace(/^@/,"");}
+export function receiptUsername(){return ADMIN_TELEGRAM_USERNAME;}
 
 export function paymentMessage(){
   const user=receiptUsername();
