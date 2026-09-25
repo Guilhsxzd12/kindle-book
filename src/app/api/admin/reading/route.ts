@@ -63,6 +63,14 @@ async function analysisCounts(){
   return {total:total||0,...result};
 }
 
+async function workerStatus(){
+  const db=createAdminSupabaseClient();
+  const {data}=await db.from("app_integrations").select("updated_at").eq("provider","local_worker").maybeSingle();
+  const lastSeen=data?.updated_at||null;
+  const age=lastSeen?Date.now()-new Date(lastSeen).getTime():Number.POSITIVE_INFINITY;
+  return {online:age<30000,lastSeen};
+}
+
 async function overview(){
   const db=createAdminSupabaseClient();
   const [{data:summary,error:summaryError},{data:recent,error:recentError}]=await Promise.all([
@@ -92,8 +100,8 @@ export async function GET(request:NextRequest){
   if(!await requireAdminApi())return NextResponse.json({error:"Acesso negado."},{status:403});
   const raw=request.nextUrl.searchParams.get("field")||"cover";
   const selectedField=fieldSet.has(raw as BookReviewField)?raw as BookReviewField:"cover";
-  const [stats,items,reviewStats,reviewItems,analysisStats,overviewData]=await Promise.all([counts(),activity(),fieldCounts(),fieldActivity(selectedField),analysisCounts(),overview()]);
-  return NextResponse.json({stats,items,reviewStats,reviewItems,analysisStats,overview:overviewData.summary,recentFullyReviewed:overviewData.recent,selectedField,updatedAt:new Date().toISOString()});
+  const [stats,items,reviewStats,reviewItems,analysisStats,overviewData,worker]=await Promise.all([counts(),activity(),fieldCounts(),fieldActivity(selectedField),analysisCounts(),overview(),workerStatus()]);
+  return NextResponse.json({stats,items,reviewStats,reviewItems,analysisStats,overview:overviewData.summary,recentFullyReviewed:overviewData.recent,worker,selectedField,updatedAt:new Date().toISOString()});
 }
 
 export async function POST(request:NextRequest){
