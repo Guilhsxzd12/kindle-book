@@ -1,0 +1,15 @@
+services:
+  leituraverso-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: leituraverso-worker
+    restart: unless-stopped
+    env_file:
+      - .env.local
+    environment:
+      NODE_ENV: production
+      LEITURAVERSO_WORKER_URL: http://127.0.0.1:3030
+      LEITURAVERSO_WORKER_DELAY_SECONDS: "5"
+    init: true
+    # Nao existe "ports": o worker nao fica exposto na rede.
