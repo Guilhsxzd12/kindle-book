@@ -5,10 +5,15 @@ import type { Book } from "@/lib/types";
 export type CatalogShelfMap=Record<string,Book[]>;
 
 async function runCatalogSearch(db:SupabaseClient, options:{search?:string;category?:string;author?:string;page?:number;size?:number;sort?:"title"|"recent"|"popular"|"views"}={}){
-  const {data,error}=await db.rpc("catalog_search",{
-    p_search:options.search||"",p_category:options.category||"",p_author:options.author||"",
-    p_page:options.page||1,p_size:Math.min(options.size||20,30),p_sort:options.sort||"title"
-  });
+  const pureSearch=Boolean(options.search)&&!options.category&&!options.author&&(options.sort||"title")==="title";
+  const {data,error}=pureSearch
+    ? await db.rpc("catalog_search_fast",{
+        p_search:options.search||"",p_page:options.page||1,p_size:Math.min(options.size||20,30)
+      })
+    : await db.rpc("catalog_search",{
+        p_search:options.search||"",p_category:options.category||"",p_author:options.author||"",
+        p_page:options.page||1,p_size:Math.min(options.size||20,30),p_sort:options.sort||"title"
+      });
   if(error){
     console.error("[catalog_search]",{code:error.code,message:error.message});
     throw new Error("Não foi possível carregar o acervo. Tente novamente.");
@@ -20,7 +25,7 @@ export async function searchCatalog(db:SupabaseClient, options:{search?:string;c
   const filtered=Boolean(options.search||options.category||options.author);
   return unstable_cache(
     ()=>runCatalogSearch(db,options),
-    ["catalog-search-v3",JSON.stringify(options)],
+    ["catalog-search-v4",JSON.stringify(options)],
     {revalidate:filtered?30:120,tags:["catalog"]}
   )();
 }
