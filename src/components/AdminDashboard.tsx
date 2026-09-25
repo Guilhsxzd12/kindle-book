@@ -117,7 +117,7 @@ export function AdminDashboard({initialBooks,initialCoverlessBooks,initialCorrec
   }
 
   function requestAdminNotification(){if("Notification" in window&&Notification.permission==="default")void Notification.requestPermission();}
-  function notifyAdmin(title:string,body:string){if("Notification" in window&&Notification.permission==="granted")new Notification(title,{body,icon:"/leituraverso-logo.svg"});if("vibrate" in navigator)navigator.vibrate([120,60,120]);}
+  function notifyAdmin(title:string,body:string){if("Notification" in window&&Notification.permission==="granted")new Notification(title,{body,icon:"/leituraverso-logo-dark-v2.svg"});if("vibrate" in navigator)navigator.vibrate([120,60,120]);}
 
   async function saveBook(_formData:FormData,publishTelegram=false){
     if(!draft.title.trim()||!draft.author.trim()){setMessage("Preencha título e autor.");return;}
