@@ -36,7 +36,7 @@ export function CatalogSearchBox({
       }catch(error){
         if(!(error instanceof DOMException&&error.name==="AbortError"))setItems([]);
       }finally{setLoading(false);}
-    },180);
+    },90);
     return()=>{window.clearTimeout(timer);controller.abort();};
   },[value]);
 
