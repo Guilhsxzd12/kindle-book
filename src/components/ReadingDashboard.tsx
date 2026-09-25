@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import {useEffect,useMemo,useRef,useState} from "react";
+import {useEffect,useMemo,useState} from "react";
 
 type Field="cover"|"author"|"category"|"title"|"description"|"language";
 type View="general"|Field;
@@ -19,6 +19,7 @@ type Payload={
   analysisStats:Stats;
   overview:Overview;
   recentFullyReviewed:FullyReviewedBook[];
+  worker?:{online:boolean;lastSeen:string|null};
   selectedField:Field;
   updatedAt:string;
 };
@@ -49,12 +50,9 @@ function pct(done:number,total:number){return total?Math.round(done/total*100):0
 export function ReadingDashboard(){
   const [view,setView]=useState<View>("general");
   const [data,setData]=useState<Payload|null>(null);
-  const [active,setActive]=useState(true);
-  const [working,setWorking]=useState(false);
   const [queueing,setQueueing]=useState(false);
   const [error,setError]=useState("");
   const [message,setMessage]=useState("");
-  const stopped=useRef(false);
 
   const selectedField:Field=view==="general"?"cover":view;
 
@@ -74,29 +72,6 @@ export function ReadingDashboard(){
     const timer=window.setInterval(()=>{if(document.visibilityState==="visible")void refresh(view);},3000);
     return()=>window.clearInterval(timer);
   },[view]);
-
-  useEffect(()=>{
-    stopped.current=false;
-    if(!active||view==="general")return()=>{stopped.current=true;};
-    let timer:number|undefined;
-    const run=async()=>{
-      if(stopped.current||document.visibilityState!=="visible"){timer=window.setTimeout(run,2500);return;}
-      setWorking(true);
-      try{
-        const response=await fetch("/api/admin/reading",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"process-field",field:view,limit:2})});
-        const json=await response.json();
-        if(!response.ok)throw new Error(json.error||"Falha ao processar.");
-        await refresh(view);
-        const processed=(json.results||[]).length;
-        timer=window.setTimeout(run,processed?900:5000);
-      }catch(err){
-        setError(err instanceof Error?err.message:"Falha ao processar.");
-        timer=window.setTimeout(run,5000);
-      }finally{if(!stopped.current)setWorking(false);}
-    };
-    void run();
-    return()=>{stopped.current=true;if(timer)window.clearTimeout(timer);};
-  },[active,view]);
 
   const stats=data?.reviewStats?.[selectedField]||emptyStats;
   const processable=Math.max(0,stats.total-stats.unavailable);
@@ -129,12 +104,12 @@ export function ReadingDashboard(){
     <div className="reading-hero card panel">
       <div>
         <span className="eyebrow">LEITURA AUTOMÁTICA DO ACERVO</span>
-        <h2>1 leitura do arquivo → 6 verificações</h2>
-        <p>O leitor central abre no máximo 4 livros ao mesmo tempo, extrai capa, autor, categoria, título, sinopse e idioma em uma única análise e reaproveita esse resultado nas seis filas.</p>
+        <h2>Seu PC processa → o site acompanha</h2>
+        <p>O LeituraVerso Worker abre 1 livro por vez no seu computador, extrai capa, autor, categoria, título, sinopse e idioma e salva os resultados no site. A Vercel não faz mais esse processamento pesado.</p>
       </div>
       <div className="reading-controls">
-        <span className={`reading-live ${active?"on":""}`}><i/>{working?"Aplicando resultados":"Atualização ao vivo"}</span>
-        <button type="button" className={active?"btn ghost":"btn"} onClick={()=>setActive(value=>!value)}>{active?"Pausar aplicação ao vivo":"Aplicar resultados ao vivo"}</button>
+        <span className={`reading-live ${data?.worker?.online?"on":""}`}><i/>{data?.worker?.online?"PC WORKER ONLINE":"PC WORKER OFFLINE"}</span>
+        <small>{data?.worker?.lastSeen?`Último contato: ${time(data.worker.lastSeen)}`:"Aguardando primeiro contato do PC"}</small>
       </div>
     </div>
 
@@ -152,7 +127,7 @@ export function ReadingDashboard(){
     {message&&<div className="notice success">{message}</div>}
 
     <div className="reading-stats">
-      <article className="card"><span>Leitor central</span><strong>{(data?.analysisStats?.processing||0).toLocaleString("pt-BR")} / 4</strong><small>arquivos abertos simultaneamente</small></article>
+      <article className="card"><span>Worker do PC</span><strong>{data?.worker?.online?"ONLINE":"OFFLINE"}</strong><small>processamento privado em 127.0.0.1</small></article>
       <article className="card"><span>Aguardando leitura</span><strong>{(data?.analysisStats?.pending||0).toLocaleString("pt-BR")}</strong><small>uma leitura servirá às 6 abas</small></article>
       <article className="card"><span>Análises prontas</span><strong>{(data?.analysisStats?.completed||0).toLocaleString("pt-BR")}</strong><small>resultados reaproveitáveis</small></article>
       <article className="card"><span>Falhas de leitura</span><strong>{(data?.analysisStats?.error||0).toLocaleString("pt-BR")}</strong><small>arquivos que falharam após tentativas</small></article>
@@ -229,7 +204,7 @@ export function ReadingDashboard(){
         <div className="reading-progress card">
           <div className="reading-progress-head"><strong>Progresso — {config.label}</strong><span>{stats.completed.toLocaleString("pt-BR")} / {processable.toLocaleString("pt-BR")}</span></div>
           <div className="reading-progress-track"><i style={{width:`${Math.min(100,percent)}%`}}/></div>
-          <small>O servidor continua mesmo com a aba fechada. O arquivo é lido uma única vez pelo leitor central e esta aba apenas aplica o resultado de {config.label.toLowerCase()}.</small>
+          <small>Você pode fechar esta aba. O Worker do seu PC continua processando a fila e o painel apenas acompanha o resultado de {config.label.toLowerCase()}.</small>
         </div>
 
         <div className="reading-columns">
@@ -261,6 +236,6 @@ export function ReadingDashboard(){
       </>;
     })()}
 
-    <div className="reading-footnote">Última sincronização: {time(data?.updatedAt)} • filas independentes na interface, leitura compartilhada por trás • limite central: 4 arquivos simultâneos.</div>
+    <div className="reading-footnote">Última sincronização: {time(data?.updatedAt)} • processamento pesado no seu PC • 1 livro por vez para manter o sistema estável.</div>
   </section>;
 }
