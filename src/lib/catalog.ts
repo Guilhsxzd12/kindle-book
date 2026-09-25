@@ -36,12 +36,25 @@ export async function catalogAuthors(db:SupabaseClient){
 }
 
 export async function catalogShelves(db:SupabaseClient,parentSlug="",size=12){
-  return unstable_cache(async()=>{
-    const {data,error}=await db.rpc("catalog_shelves",{p_parent_slug:parentSlug,p_size:Math.min(size,20)});
+  const params={p_parent_slug:parentSlug,p_size:Math.min(size,20)};
+  const cached=unstable_cache(async()=>{
+    const {data,error}=await db.rpc("catalog_shelves",params);
     if(error){
       console.error("[catalog_shelves]",{code:error.code,message:error.message,parentSlug});
+      throw new Error(`catalog_shelves: ${error.message}`);
+    }
+    return (data||{}) as CatalogShelfMap;
+  },["catalog-shelves-v2",parentSlug,String(size)],{revalidate:120,tags:["catalog"]});
+
+  try{
+    return await cached();
+  }catch(error){
+    console.warn("[catalog_shelves] cache attempt failed; retrying directly",{parentSlug,message:error instanceof Error?error.message:String(error)});
+    const {data,error:retryError}=await db.rpc("catalog_shelves",params);
+    if(retryError){
+      console.error("[catalog_shelves_retry]",{code:retryError.code,message:retryError.message,parentSlug});
       return {} as CatalogShelfMap;
     }
     return (data||{}) as CatalogShelfMap;
-  },["catalog-shelves",parentSlug,String(size)],{revalidate:120,tags:["catalog"]})();
+  }
 }
