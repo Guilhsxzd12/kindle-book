@@ -5,9 +5,10 @@ import { BackToPrevious } from "@/components/BackToPrevious";
 import { BookCard } from "@/components/BookCard";
 import { CategoryHub } from "@/components/CategoryHub";
 import { HorizontalBookSlider } from "@/components/HorizontalBookSlider";
+import { CatalogSearchBox } from "@/components/CatalogSearchBox";
 import { RealtimeBookCount } from "@/components/RealtimeBookCount";
 import { requireApproved } from "@/lib/auth";
-import { searchCatalog,catalogAuthors,catalogShelves } from "@/lib/catalog";
+import { searchCatalog,catalogAuthors,catalogShelves,catalogCategories,catalogBookCount } from "@/lib/catalog";
 import type { CatalogShelfMap } from "@/lib/catalog";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import type { Category } from "@/lib/types";
@@ -34,10 +35,9 @@ export default async function LibraryPage({searchParams}:{searchParams:Promise<L
   const admin=createAdminSupabaseClient();
   const {q="",categoria="",autor="",pagina="1",todos=""}=await searchParams;
   const query=q.trim();const authorFilter=autor.trim();
-  const [{data:categoryData,error:categoryError},authors]=await Promise.all([
-    supabase.from("categories").select("id,name,slug,parent_id,sort_order").order("sort_order").order("name"),catalogAuthors(supabase)
+  const [categoryData,authors]=await Promise.all([
+    catalogCategories(supabase),catalogAuthors(supabase)
   ]);
-  if(categoryError){console.error("[catalog_categories]",categoryError);throw new Error("Não foi possível carregar as categorias.");}
   const categories=((categoryData||[]) as Category[]).sort(categoryOrder);
   const topLevelCategories=categories.filter(category=>!category.parent_id);
   const selectedCategory=categories.find(c=>c.slug===categoria);
@@ -54,7 +54,7 @@ export default async function LibraryPage({searchParams}:{searchParams:Promise<L
   const requestedPage=Number.isFinite(parsedPage)&&parsedPage>0?parsedPage:1;
   const pageSize=20;
 
-  const totalBookCountPromise=admin.from("books").select("id",{count:"exact",head:true}).eq("published",true);
+  const totalBookCountPromise=filteredMode?Promise.resolve(0):catalogBookCount(admin);
   const resultPromise=searchCatalog(filteredMode?supabase:admin,filteredMode
     ?{search:query,category:categoria,author:authorFilter,page:categoryHubMode?1:requestedPage,size:categoryHubMode?30:pageSize,sort:"title"}
     :{size:12,sort:"recent"});
@@ -72,7 +72,7 @@ export default async function LibraryPage({searchParams}:{searchParams:Promise<L
     totalBookCountPromise,resultPromise,popularPromise,accessedPromise,homeShelvesPromise,childResultsPromise
   ]);
 
-  const totalBooks=typeof totalBookCountResult.count==="number"?totalBookCountResult.count:result.total;
+  const totalBooks=filteredMode?result.total:totalBookCountResult;
   const recent=filteredMode?[]:result.books;
   const featured=recent.filter(book=>book.cover_url).slice(0,4);
   const popular=popularResult?.books||[];
@@ -86,7 +86,7 @@ export default async function LibraryPage({searchParams}:{searchParams:Promise<L
   const pageItems=paginationItems(currentPage,totalPages);
 
   const filters=<div className="filter-panel-inner">
-    <div className="filter-block"><h3>Pesquisar</h3><form className="filter-search" action="/biblioteca"><input name="q" defaultValue={query} placeholder="Título ou autor"/><button type="submit">Buscar</button></form></div>
+    <div className="filter-block"><h3>Pesquisar</h3><CatalogSearchBox className="filter-search" placeholder="Título ou autor" initialValue={query}/></div>
     <div className="filter-block"><h3>Categorias</h3><div className="filter-links"><Link className={!selectedCategory?"active":""} href={urlWith(activeBase,{categoria:"",pagina:""})}>Todas</Link>{topLevelCategories.map(category=><Link className={selectedCategory?.id===category.id?"active":""} key={category.id} href={urlWith(activeBase,{categoria:category.slug,pagina:""})}>{category.name}</Link>)}</div></div>
     <div className="filter-block"><h3>Autores</h3><div className="filter-links author-filter-links"><Link className={!authorFilter?"active":""} href={urlWith(activeBase,{autor:"",pagina:""})}>Todos</Link>{authors.slice(0,18).map(author=><Link className={norm(author)===norm(authorFilter)?"active":""} key={author} href={urlWith(activeBase,{autor:author,pagina:""})}>{author}</Link>)}</div></div>
     {(query||selectedCategory||authorFilter)&&<Link className="clear-filters" href="/biblioteca">Limpar filtros</Link>}
@@ -95,7 +95,7 @@ export default async function LibraryPage({searchParams}:{searchParams:Promise<L
   return <AppShell><main className="library-home">
     {!filteredMode&&<section className="editorial-hero">
       <div className="shell-width editorial-hero-inner">
-        <div className="editorial-copy"><span className="eyebrow">OLÁ, {profile.full_name?.split(" ")[0]?.toUpperCase()||"LEITOR"}</span><h1>Histórias para todos<br/>os seus momentos.</h1><p>Explore o acervo, escolha seu próximo livro e baixe em PDF ou EPUB para ler no aplicativo que preferir.</p><form className="hero-search" action="/biblioteca"><input name="q" placeholder="Qual livro você procura?" aria-label="Pesquisar livro"/><button>Buscar</button></form><div className="hero-stats"><div><RealtimeBookCount initialCount={totalBooks}/><span>livros disponíveis</span></div><div><strong>{topLevelCategories.length}</strong><span>categorias principais</span></div></div></div>
+        <div className="editorial-copy"><span className="eyebrow">OLÁ, {profile.full_name?.split(" ")[0]?.toUpperCase()||"LEITOR"}</span><h1>Histórias para todos<br/>os seus momentos.</h1><p>Explore o acervo, escolha seu próximo livro e baixe em PDF ou EPUB para ler no aplicativo que preferir.</p><CatalogSearchBox className="hero-search" placeholder="Qual livro você procura?"/><div className="hero-stats"><div><RealtimeBookCount initialCount={totalBooks}/><span>livros disponíveis</span></div><div><strong>{topLevelCategories.length}</strong><span>categorias principais</span></div></div></div>
         <div className="cover-collage" aria-label="Livros em destaque">{featured.map((book,index)=><Link href={`/livro/${book.slug}`} className={`collage-book collage-${index+1}`} key={book.id}>{book.cover_url&&<img src={book.cover_url} alt={`Capa de ${book.title}`}/>}</Link>)}</div>
       </div>
     </section>}
