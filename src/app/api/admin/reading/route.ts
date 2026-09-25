@@ -65,10 +65,30 @@ async function analysisCounts(){
 
 async function workerStatus(){
   const db=createAdminSupabaseClient();
-  const {data}=await db.from("app_integrations").select("updated_at").eq("provider","local_worker").maybeSingle();
-  const lastSeen=data?.updated_at||null;
+
+  // Prefer the explicit heartbeat written by the current local worker.
+  const {data:heartbeat}=await db.from("app_integrations")
+    .select("updated_at")
+    .eq("provider","local_worker")
+    .maybeSingle();
+
+  let lastSeen=heartbeat?.updated_at||null;
+
+  // Backward-compatible fallback: older workers installed before the heartbeat
+  // still update job rows continuously while processing. Treat recent activity
+  // as proof that the PC worker is online.
+  const [analysis,reading,review]=await Promise.all([
+    db.from("book_analysis_jobs").select("updated_at").order("updated_at",{ascending:false}).limit(1).maybeSingle(),
+    db.from("book_reading_jobs").select("updated_at").order("updated_at",{ascending:false}).limit(1).maybeSingle(),
+    db.from("book_field_review_jobs").select("updated_at").order("updated_at",{ascending:false}).limit(1).maybeSingle()
+  ]);
+
+  for(const candidate of [analysis.data?.updated_at,reading.data?.updated_at,review.data?.updated_at]){
+    if(candidate&&(!lastSeen||new Date(candidate).getTime()>new Date(lastSeen).getTime()))lastSeen=candidate;
+  }
+
   const age=lastSeen?Date.now()-new Date(lastSeen).getTime():Number.POSITIVE_INFINITY;
-  return {online:age<30000,lastSeen};
+  return {online:age<45000,lastSeen};
 }
 
 async function overview(){
