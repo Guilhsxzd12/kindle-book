@@ -9,8 +9,8 @@
     "start:worker-host": "next start -H 127.0.0.1 -p 3030",
     "worker:pc": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/leituraverso-worker.ps1",
     "build:cloudflare": "opennextjs-cloudflare build",
-    "preview:cloudflare": "npm run build:cloudflare && wrangler dev --no-bundle",
-    "deploy:cloudflare": "wrangler deploy"
+    "preview:cloudflare": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy:cloudflare": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "1.20.6",
