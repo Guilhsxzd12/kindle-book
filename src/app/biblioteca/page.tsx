@@ -16,6 +16,11 @@ import type { Category } from "@/lib/types";
 type LibraryQuery={q?:string;categoria?:string;autor?:string;pagina?:string;todos?:string};
 
 function norm(value:string){return value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();}
+function catalogCoverSrc(url:string|null){
+  if(!url)return null;
+  const match=url.match(/^\\/api\\/covers\\/([^/?#]+)/);
+  return match?.[1]?"https://drive.google.com/thumbnail?id="+encodeURIComponent(match[1])+"&sz=w1200":url;
+}
 function excerpt(value:string|null,max=220){const text=(value||"Sinopse não informada.").replace(/\s+/g," ").trim();return text.length>max?`${text.slice(0,max).trim()}…`:text;}
 function categoryOrder(a:Category,b:Category){return (a.sort_order??100)-(b.sort_order??100)||a.name.localeCompare(b.name,"pt-BR");}
 function urlWith(base:LibraryQuery,patch:LibraryQuery){
