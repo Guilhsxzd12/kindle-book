@@ -418,3 +418,40 @@ a[href="/favoritos"],a[href^="/favoritos?"]{display:none!important}
   font-weight:900;
   cursor:pointer;
 }
+
+
+/* Restored classic header: prevent desktop search/request controls from overflowing */
+@media(min-width:821px){
+  .capsule-store-header .header-capsule{
+    width:min(1180px,calc(100% - 40px))!important;
+    display:grid!important;
+    grid-template-columns:auto minmax(0,1fr) minmax(260px,340px) auto auto!important;
+    align-items:center!important;
+    gap:12px!important;
+    overflow:visible!important;
+  }
+  .capsule-brand{min-width:0!important}
+  .capsule-nav{
+    min-width:0!important;
+    display:flex!important;
+    align-items:center!important;
+    gap:6px!important;
+    white-space:nowrap!important;
+  }
+  .capsule-search{
+    width:100%!important;
+    min-width:0!important;
+    max-width:none!important;
+    margin-left:0!important;
+    overflow:visible!important;
+  }
+  .capsule-search input{
+    min-width:0!important;
+    width:100%!important;
+  }
+  .capsule-search button,
+  .capsule-request{
+    flex:none!important;
+    white-space:nowrap!important;
+  }
+}
