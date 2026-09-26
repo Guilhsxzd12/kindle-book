@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireApproved } from "@/lib/auth";
+import { StableSiteShell } from "@/components/StableSiteShell";
 import { searchCatalog,catalogCategories } from "@/lib/catalog";
 import type { Category } from "@/lib/types";
 
@@ -61,28 +62,7 @@ export default async function LibraryPage({searchParams}:{searchParams:Promise<L
   const selectedCategory=categories.find(c=>c.slug===categoria);
   const title=query?("Resultados para “"+query+"”"):(selectedCategory?.name||"Todos os livros");
 
-  return <main className="lv-lite">
-    <header className="lv-lite-header">
-      <div className="lv-lite-header-inner">
-        <Link href="/biblioteca" className="lv-lite-brand">
-          <img src="/leituraverso-header-final.svg" alt="LeituraVerso"/>
-        </Link>
-
-        <nav className="lv-lite-nav">
-          <Link href="/biblioteca">Início</Link>
-          <a href="/biblioteca#novidades">Novidades</a>
-          <Link href="/ajuda">Ajuda</Link>
-          {profile.role==="admin"&&<Link href="/admin">Admin</Link>}
-        </nav>
-
-        <form action="/biblioteca" method="get" className="lv-lite-search">
-          <input name="q" defaultValue={query} placeholder="Livro ou autor..."/>
-          <button type="submit">Pesquisar</button>
-        </form>
-
-        <Link href="/pedido" className="lv-lite-request">Pedir livro</Link>
-      </div>
-    </header>
+  return <StableSiteShell isAdmin={profile.role==="admin"}><main className="lv-lite">
 
     {!browseMode&&<section className="lv-lite-hero">
       <div className="lv-lite-shell lv-lite-hero-grid">
@@ -178,5 +158,5 @@ export default async function LibraryPage({searchParams}:{searchParams:Promise<L
         </nav>}
       </section>}
     </div>
-  </main>;
+  </main></StableSiteShell>;
 }
