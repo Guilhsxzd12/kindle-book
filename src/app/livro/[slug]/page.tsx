@@ -2,12 +2,9 @@ import type { Metadata } from "next";
 import { notFound,permanentRedirect } from "next/navigation";
 import Link from "next/link";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { AppShell } from "@/components/AppShell";
-import { FavoriteButton } from "@/components/FavoriteButton";
+import { StableSiteShell } from "@/components/StableSiteShell";
 import { KindleShareButton,type DownloadLanguage } from "@/components/KindleShareButton";
 import { PdfDownloadButton } from "@/components/PdfDownloadButton";
-import { BookCard } from "@/components/BookCard";
-import { HorizontalBookSlider } from "@/components/HorizontalBookSlider";
 import { BookViewTracker } from "@/components/BookViewTracker";
 import { QuickEditBookModal } from "@/components/QuickEditBookModal";
 import { requireApproved } from "@/lib/auth";
@@ -60,14 +57,14 @@ export default async function BookPage({params}:{params:Promise<{slug:string}>})
   const rows=(fileRows||[]) as {language:string;format:string}[];const fallbackLanguage=b.language||"pt";const rawHasPdf=isPdf(b)||Boolean(b.reading_pdf_drive_file_id);const rawHasEpub=isEpub(b)||Boolean(b.kindle_drive_file_id);const pdfLanguages=languageOptions(rows,"pdf",rawHasPdf?fallbackLanguage:null);const epubLanguages=languageOptions(rows,"epub",rawHasEpub?fallbackLanguage:null);const hasPdf=pdfLanguages.length>0;const hasEpub=epubLanguages.length>0;
   const allLanguages=[...new Map([...pdfLanguages,...epubLanguages].map(x=>[x.code,x])).values()];
 
-  return <AppShell><BookViewTracker bookId={b.id}/><main className="shell-width detail-page"><Link className="back-link" href={b.published?"/biblioteca":"/admin"}>← {b.published?"Voltar ao acervo":"Voltar ao painel"}</Link>{profile.role==="admin"&&!b.published&&<div className="notice">Prévia administrativa: este livro está oculto do catálogo enquanto aguarda correção.</div>}<section className="detail">
+  return <StableSiteShell isAdmin={profile.role==="admin"}><BookViewTracker bookId={b.id}/><main className="shell-width detail-page"><Link className="back-link" href={b.published?"/biblioteca":"/admin"}>← {b.published?"Voltar ao acervo":"Voltar ao painel"}</Link>{profile.role==="admin"&&!b.published&&<div className="notice">Prévia administrativa: este livro está oculto do catálogo enquanto aguarda correção.</div>}<section className="detail">
     <div className="detail-cover-col">{b.cover_url?<img className="cover" src={b.cover_url} alt={`Capa de ${b.title}`}/>:<div className="cover-fallback">{b.title}</div>}<div className="detail-small-meta">{b.categories?.name&&<span>{b.categories.name}</span>}{allLanguages.map(lang=><span key={lang.code}>{lang.code.toUpperCase()}</span>)}</div></div>
     <div className="detail-copy"><span className="eyebrow">LEITURAVERSO</span><h1>{b.title}</h1><h2>{b.author}</h2>
       <div className="format-note"><strong>Escolha o formato</strong><span>{allLanguages.length>1?"Há mais de um idioma disponível. Depois de escolher o formato, selecione o idioma desejado.":"PDF para leitura direta ou EPUB para Kindle e outros aplicativos compatíveis."}</span></div>
-      <div className="detail-actions">{hasPdf&&<PdfDownloadButton bookId={b.id} languages={pdfLanguages}/>} {hasEpub&&<KindleShareButton id={b.id} title={b.title} author={b.author} source="catalog" languages={epubLanguages}/>}<FavoriteButton bookId={b.id} initial={Boolean(favorite)}/>{profile.role==="admin"&&<><QuickEditBookModal bookId={b.id} title={b.title} author={b.author} categoryId={b.category_id} coverUrl={b.cover_url} categories={(adminCategories||[]) as Category[]}/><Link className="btn ghost" href={`/admin/capas/${b.id}`}>Gerenciar capas</Link><Link className="btn ghost" href={`/admin/idiomas/${b.id}`}>Gerenciar idiomas</Link></>}</div>
+      <div className="detail-actions">{hasPdf&&<PdfDownloadButton bookId={b.id} languages={pdfLanguages}/>} {hasEpub&&<KindleShareButton id={b.id} title={b.title} author={b.author} source="catalog" languages={epubLanguages}/>}{profile.role==="admin"&&<><QuickEditBookModal bookId={b.id} title={b.title} author={b.author} categoryId={b.category_id} coverUrl={b.cover_url} categories={(adminCategories||[]) as Category[]}/><Link className="btn ghost" href={`/admin/capas/${b.id}`}>Gerenciar capas</Link><Link className="btn ghost" href={`/admin/idiomas/${b.id}`}>Gerenciar idiomas</Link></>}</div>
       {!hasPdf&&!hasEpub&&<div className="notice">Este título está temporariamente sem arquivo disponível.</div>}
       <div className="synopsis-block"><span className="eyebrow">SOBRE O LIVRO</span><div className="prose">{b.description||"Sinopse não informada."}</div></div></div>
   </section>
-  {related.length>0&&<section className="related-section"><div className="section-heading"><div><span className="eyebrow">VOCÊ TAMBÉM PODE GOSTAR</span><h2>Livros relacionados</h2><p>Arraste para o lado para ver títulos do mesmo autor ou categoria.</p></div></div><HorizontalBookSlider>{related.map(item=><BookCard key={item.id} book={item}/>)}</HorizontalBookSlider></section>}
-  </main></AppShell>;
+  {related.length>0&&<section className="related-section"><div className="section-heading"><div><span className="eyebrow">VOCÊ TAMBÉM PODE GOSTAR</span><h2>Livros relacionados</h2><p>Deslize para o lado para ver títulos do mesmo autor ou categoria.</p></div></div><div className="stable-related-scroll">{related.map(item=><Link className="stable-related-card" key={item.id} href={"/livro/"+item.slug}><div className="stable-related-cover">{item.cover_url?<img src={item.cover_url} alt={"Capa de "+item.title}/>:<span>{item.title}</span>}</div><strong>{item.title}</strong><small>{item.author||"Autor não informado"}</small></Link>)}</div></section>}
+  </main></StableSiteShell>;
 }
