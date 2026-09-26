@@ -52,7 +52,6 @@ export async function AppShell({children,allowInactive=false}:{children:React.Re
             <div className="nav-dropdown-menu capsule-dropdown-menu authors-menu"><span className="dropdown-kicker">Autores do acervo</span><div className="dropdown-link-grid">{authorLinks}</div><Link className="dropdown-see-all" href="/biblioteca">Ver todos os livros →</Link></div>
           </div>
           <Link href="/biblioteca#novidades">Novidades</Link>
-          <Link href="/favoritos">Favoritos</Link>
           <Link href="/ajuda">Ajuda</Link>
           {admin&&<Link href="/admin">Admin</Link>}
         </nav>
@@ -71,7 +70,6 @@ export async function AppShell({children,allowInactive=false}:{children:React.Re
               <details className="mobile-menu-group"><summary>Categorias <Icon name="chevron"/></summary><div>{categoryLinks}</div></details>
               <details className="mobile-menu-group"><summary>Autores <Icon name="chevron"/></summary><div>{authorLinks}</div></details>
               <Link href="/biblioteca#novidades">Novidades</Link>
-              <Link href="/favoritos">Favoritos</Link>
               <Link href="/ajuda">Ajuda</Link>
               {admin&&<Link href="/admin">Admin</Link>}
             </nav>
