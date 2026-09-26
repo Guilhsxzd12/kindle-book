@@ -24,9 +24,22 @@ export async function GET(request:NextRequest){
       sort:q||categoria||todos?"title":"recent"
     });
 
+    // Keep the origin payload intentionally small. Catalog RPCs may return fields
+    // used by admin/detail pages, but library cards only need this public subset.
+    // Description is only needed by the home spotlight; browse/search results omit it.
+    const books=(result.books||[]).map((book:any)=>({
+      id:book.id,
+      slug:book.slug,
+      title:book.title,
+      author:book.author,
+      cover_url:book.cover_url,
+      ...(browse?{}:{description:book.description}),
+      categories:book.categories?.name?{name:book.categories.name}:null
+    }));
+
     const response=NextResponse.json({
       categories,
-      books:result.books,
+      books,
       total:result.total,
       page:result.page,
       browse
