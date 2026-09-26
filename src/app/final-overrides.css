@@ -176,3 +176,217 @@
   .lv-lite-grid .lv-slide-book{width:auto}
   .lv-lite-spotlight{grid-template-columns:1fr!important}
 }
+
+
+/* =========================================================
+   LEITURAVERSO CLASSIC — stable Cloudflare visual system
+   Recreates the pre-migration visual language without heavy UI logic.
+   ========================================================= */
+.stable-site-shell{min-height:100vh;background:#fbf8f3;color:#2d2630}
+.stable-site-content{min-height:100vh;padding-top:92px}
+.stable-header{
+  position:fixed;
+  inset:0 0 auto 0;
+  z-index:220;
+  padding:12px 16px 0;
+  background:linear-gradient(to bottom,rgba(251,248,243,.98),rgba(251,248,243,.84),transparent);
+}
+.stable-header-inner{
+  width:min(1320px,100%);
+  margin:0 auto;
+  min-height:76px;
+  display:grid;
+  grid-template-columns:auto auto minmax(260px,1fr) auto auto;
+  align-items:center;
+  gap:14px;
+  padding:11px 16px;
+  border:1px solid rgba(114,49,68,.16);
+  border-radius:34px;
+  background:linear-gradient(120deg,#46152f 0%,#65153e 55%,#5c173b 100%);
+  box-shadow:0 18px 44px rgba(67,25,45,.22);
+}
+.stable-brand{display:flex;align-items:center;padding:0 6px;text-decoration:none}
+.stable-brand img{display:block;width:164px;height:auto;filter:brightness(0) invert(1)}
+.stable-nav{display:flex;align-items:center;gap:1px}
+.stable-nav a{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  padding:10px 11px;
+  border-radius:12px;
+  color:#f1dfe7;
+  text-decoration:none;
+  font-size:12px;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.035em;
+}
+.stable-nav a:hover{background:rgba(255,255,255,.08);color:#fff}
+.stable-search{
+  min-width:0;
+  height:44px;
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  align-items:center;
+  gap:8px;
+  padding:0 6px 0 13px;
+  border:1px solid rgba(255,255,255,.28);
+  border-radius:999px;
+  background:rgba(255,255,255,.07);
+}
+.stable-search svg{width:17px;height:17px;fill:none;stroke:#e9dce2;stroke-width:1.8}
+.stable-search input{
+  width:100%;
+  min-width:0;
+  height:40px;
+  padding:0;
+  border:0;
+  outline:0;
+  background:transparent;
+  color:#fff;
+  font-size:13px;
+}
+.stable-search input::placeholder{color:#dbcbd2}
+.stable-search button{
+  height:34px;
+  padding:0 14px;
+  border:0;
+  border-radius:999px;
+  background:#fff7ea;
+  color:#55203a;
+  font-size:11px;
+  font-weight:900;
+  cursor:pointer;
+}
+.stable-request{
+  height:42px;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:0 17px;
+  border-radius:999px;
+  background:#fff7ea;
+  color:#521c37;
+  text-decoration:none;
+  font-size:11px;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.03em;
+  white-space:nowrap;
+}
+.stable-request svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8}
+.stable-user{
+  width:42px;height:42px;
+  display:grid;place-items:center;
+  border:1px solid rgba(255,255,255,.3);
+  border-radius:50%;
+  color:#fff;
+}
+.stable-user svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7}
+.stable-floating-contact{
+  position:fixed;
+  right:28px;
+  bottom:24px;
+  z-index:180;
+  display:grid;
+  gap:10px;
+}
+.stable-contact{
+  width:50px;height:50px;
+  display:grid;place-items:center;
+  border-radius:50%;
+  color:#fff;
+  box-shadow:0 12px 26px rgba(29,27,31,.16);
+}
+.stable-contact svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8}
+.stable-contact.telegram{background:#24a8e0}
+.stable-contact.whatsapp{background:#20ca67}
+
+/* Library aligns with original LeituraVerso palette */
+.lv-lite{background:#fbf8f3!important}
+.lv-lite-hero{
+  border-bottom:1px solid #ead9d1!important;
+  background:
+    radial-gradient(circle at 86% 26%,rgba(117,49,68,.10),transparent 26%),
+    linear-gradient(135deg,#fbf6f2 0%,#f6ede7 54%,#f2e4dc 100%)!important;
+}
+.lv-lite-eyebrow{color:#7d3041!important}
+.lv-lite-hero-copy h1,.lv-home-heading h2,.lv-lite-section-head h2{color:#2d2630!important}
+.lv-lite-visual{
+  background:
+    radial-gradient(circle at 76% 17%,rgba(255,255,255,.16),transparent 25%),
+    linear-gradient(145deg,#4a2030 0%,#6b2d43 56%,#8b4b5d 100%)!important;
+}
+.lv-lite-categories a.active{background:#5d2030!important;border-color:#5d2030!important}
+.lv-see-all,.lv-clear-filter,.lv-lite-pagination a{color:#5d2030!important}
+.lv-lite-book,.lv-slide-book{border-color:#e5d8d0!important}
+.lv-lite-spotlight{
+  background:linear-gradient(135deg,#fffdfb,#f8efe9)!important;
+  border-color:#e4d9d2!important;
+}
+
+/* Book detail keeps the classic editorial look but uses stable shell */
+.detail-page{padding-top:34px!important}
+.detail-copy h1{font-family:Georgia,"Times New Roman",serif!important;color:#3b1727!important}
+.detail-copy h2{color:#956477!important}
+.detail-actions .btn,.detail-actions button{border-radius:999px!important}
+.detail-actions .btn:not(.ghost),.detail-actions button:not(.ghost){background:#5d0f39!important;border-color:#5d0f39!important}
+.stable-related-scroll{
+  display:flex;
+  gap:16px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  padding:3px 2px 14px;
+  scroll-snap-type:x proximity;
+  scrollbar-width:thin;
+  scrollbar-color:#8d6b77 #efe6e1;
+}
+.stable-related-card{
+  flex:0 0 162px;
+  scroll-snap-align:start;
+  display:grid;
+  gap:8px;
+  color:#2d2630;
+  text-decoration:none;
+}
+.stable-related-cover{
+  aspect-ratio:2/3;
+  overflow:hidden;
+  display:grid;
+  place-items:center;
+  border-radius:12px;
+  background:#eee4dc;
+  box-shadow:0 9px 24px rgba(65,39,49,.09);
+}
+.stable-related-cover img{width:100%;height:100%;object-fit:cover;display:block}
+.stable-related-cover span{padding:14px;text-align:center;color:#735f68;font-weight:800}
+.stable-related-card strong{font-size:13px;line-height:1.25}
+.stable-related-card small{color:#84757c;font-size:11px}
+
+/* Hide obsolete favorite affordances globally */
+a[href="/favoritos"],a[href^="/favoritos?"]{display:none!important}
+
+@media(max-width:1080px){
+  .stable-header-inner{grid-template-columns:auto 1fr auto auto}
+  .stable-nav{display:none}
+}
+@media(max-width:760px){
+  .stable-header{padding:8px 10px 0}
+  .stable-header-inner{
+    grid-template-columns:auto 1fr auto;
+    gap:8px;
+    padding:9px 11px;
+    border-radius:24px;
+  }
+  .stable-brand img{width:132px}
+  .stable-search{
+    grid-column:1/-1;
+    grid-row:2;
+    height:42px;
+  }
+  .stable-request{height:40px;padding:0 12px;font-size:10px}
+  .stable-user{display:none}
+  .stable-site-content{padding-top:132px}
+  .stable-floating-contact{right:16px;bottom:18px}
+  .stable-contact{width:46px;height:46px}
+}
