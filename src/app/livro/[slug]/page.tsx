@@ -46,7 +46,7 @@ export default async function BookPage({params}:{params:Promise<{slug:string}>})
   const b={...book,categories:categoryName?{name:categoryName}:null} as Book;
 
   const [{data:relatedData},{data:fileRows},{data:adminCategories}]=await Promise.all([
-    catalogDb.from("books").select("*").eq("published",true).neq("id",b.id).limit(40),
+    catalogDb.from("books").select("id,slug,title,author,cover_url,category_id").eq("published",true).neq("id",b.id).or(`author.eq.${b.author||""},category_id.eq.${b.category_id||"00000000-0000-0000-0000-000000000000"}`).limit(12),
     supabase.from("book_language_files").select("language,format").eq("book_id",b.id),
     profile.role==="admin"?catalogDb.from("categories").select("id,name,slug,parent_id").order("name"):Promise.resolve({data:[]})
   ]);
