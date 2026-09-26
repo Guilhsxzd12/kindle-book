@@ -390,3 +390,31 @@ a[href="/favoritos"],a[href^="/favoritos?"]{display:none!important}
   .stable-floating-contact{right:16px;bottom:18px}
   .stable-contact{width:46px;height:46px}
 }
+
+
+/* Cloudflare render-first catalog states */
+.library-loading-card,.library-error-card{
+  min-height:150px;
+  display:grid;
+  place-items:center;
+  align-content:center;
+  gap:8px;
+  padding:28px;
+  border:1px solid #e4d9d2;
+  border-radius:22px;
+  background:#fffdfb;
+  text-align:center;
+  box-shadow:0 12px 32px rgba(64,39,50,.06);
+}
+.library-loading-card strong,.library-error-card strong{font:700 22px/1.1 Georgia,serif;color:#3b1727}
+.library-loading-card span,.library-error-card span{color:#7b6e74;font-size:13px}
+.library-error-card button{
+  margin-top:8px;
+  padding:10px 16px;
+  border:0;
+  border-radius:999px;
+  background:#5d2030;
+  color:#fff;
+  font-weight:900;
+  cursor:pointer;
+}
