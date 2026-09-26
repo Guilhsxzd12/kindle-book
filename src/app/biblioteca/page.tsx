@@ -62,16 +62,12 @@ export default async function LibraryPage({searchParams}:{searchParams:Promise<L
     :{size:12,sort:"recent"});
 
   let popularResult:null|Awaited<ReturnType<typeof searchCatalog>>=null;
-  let accessedResult:null|Awaited<ReturnType<typeof searchCatalog>>=null;
   let shelves={} as CatalogShelfMap;
   const childResults:{category:Category;books:Awaited<ReturnType<typeof searchCatalog>>["books"];total:number}[]=[];
 
   if(!filteredMode){
     try{popularResult=await searchCatalog(admin,{size:12,sort:"popular"});}
     catch(error){console.warn("[biblioteca] popular skipped",{message:error instanceof Error?error.message:String(error)});}
-
-    try{accessedResult=await searchCatalog(admin,{size:12,sort:"views"});}
-    catch(error){console.warn("[biblioteca] views skipped",{message:error instanceof Error?error.message:String(error)});}
 
     try{shelves=await catalogShelves(admin,"",12);}
     catch(error){console.warn("[biblioteca] shelves skipped",{message:error instanceof Error?error.message:String(error)});}
@@ -92,7 +88,6 @@ export default async function LibraryPage({searchParams}:{searchParams:Promise<L
     total:result.total,
     recent:result.books.length,
     popular:popularResult?.books?.length||0,
-    accessed:accessedResult?.books?.length||0,
     shelves:Object.keys(shelves).length
   });
 
@@ -100,8 +95,7 @@ export default async function LibraryPage({searchParams}:{searchParams:Promise<L
   const recent=filteredMode?[]:result.books;
   const featured=recent.filter(book=>book.cover_url).slice(0,4);
   const popular=popularResult?.books||[];
-  const mostAccessed=accessedResult?.books||[];
-  const spotlight=popular[0]||mostAccessed[0]||recent[0];
+  const spotlight=popular[0]||recent[0];
   const homeCategories=filteredMode?topLevelCategories:topLevelCategories.filter(category=>(shelves[category.id]||[]).length>0);
   const activeBase:LibraryQuery={q:query||undefined,categoria:categoria||undefined,autor:authorFilter||undefined,todos:todos||undefined};
   const totalPages=Math.max(1,Math.ceil(result.total/pageSize));
@@ -130,8 +124,6 @@ export default async function LibraryPage({searchParams}:{searchParams:Promise<L
       {!filteredMode&&recent.length>0&&<section id="novidades" className="library-section"><div className="section-heading"><div><span className="eyebrow">NOVIDADES</span><h2>Adicionados recentemente</h2><p>Deslize para o lado para explorar os títulos mais novos.</p></div></div><HorizontalBookSlider>{recent.map(book=><BookCard key={book.id} book={book} isAdmin={isAdmin}/>)}</HorizontalBookSlider></section>}
 
       {!filteredMode&&spotlight&&<section className="spotlight-section"><div className="spotlight-card"><div className="spotlight-cover">{spotlight.cover_url?<img src={spotlight.cover_url} alt={`Capa de ${spotlight.title}`}/>:<div className="cover-fallback">{spotlight.title}</div>}</div><div className="spotlight-copy"><span className="eyebrow">DESTAQUE</span><h2>{spotlight.title}</h2><p className="spotlight-meta">{spotlight.categories?.name||"Livro"} • {spotlight.author}</p><strong>Sinopse:</strong><p>{excerpt(spotlight.description)}</p><Link className="spotlight-link" href={`/livro/${spotlight.slug}`}>Conferir</Link></div></div></section>}
-
-      {!filteredMode&&mostAccessed.length>0&&<section className="library-section metric-section"><div className="section-heading"><div><span className="eyebrow">EM ALTA</span><h2>Mais acessados</h2><p>Os livros que mais despertaram interesse no acervo.</p></div></div><HorizontalBookSlider>{mostAccessed.map(book=><BookCard key={book.id} book={book} isAdmin={isAdmin}/>)}</HorizontalBookSlider></section>}
 
       {!filteredMode&&popular.length>0&&<section className="library-section metric-section"><div className="section-heading"><div><span className="eyebrow">PREFERIDOS</span><h2>Mais populares</h2><p>Uma seleção baseada nos favoritos dos leitores.</p></div></div><HorizontalBookSlider>{popular.map(book=><BookCard key={book.id} book={book} isAdmin={isAdmin}/>)}</HorizontalBookSlider></section>}
 
