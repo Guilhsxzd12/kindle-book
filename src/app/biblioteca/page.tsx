@@ -1,137 +1,151 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { AppShell } from "@/components/AppShell";
-import { BackToPrevious } from "@/components/BackToPrevious";
-import { BookCard } from "@/components/BookCard";
-import { HorizontalBookSlider } from "@/components/HorizontalBookSlider";
-import { CatalogSearchBox } from "@/components/CatalogSearchBox";
-import { RealtimeBookCount } from "@/components/RealtimeBookCount";
 import { requireApproved } from "@/lib/auth";
-import { searchCatalog,catalogAuthors,catalogCategories,catalogBookCount } from "@/lib/catalog";
-import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import { searchCatalog,catalogCategories } from "@/lib/catalog";
 import type { Category } from "@/lib/types";
 
-type LibraryQuery={q?:string;categoria?:string;autor?:string;pagina?:string;todos?:string};
+type LibraryQuery={q?:string;categoria?:string;pagina?:string};
 
-function norm(value:string){return value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();}
-function excerpt(value:string|null,max=220){const text=(value||"Sinopse não informada.").replace(/\s+/g," ").trim();return text.length>max?text.slice(0,max).trim()+"…":text;}
-function categoryOrder(a:Category,b:Category){return (a.sort_order??100)-(b.sort_order??100)||a.name.localeCompare(b.name,"pt-BR");}
-function urlWith(base:LibraryQuery,patch:LibraryQuery){
-  const params=new URLSearchParams();const next={...base,...patch};
-  if(next.todos)params.set("todos",next.todos);if(next.q)params.set("q",next.q);if(next.categoria)params.set("categoria",next.categoria);if(next.autor)params.set("autor",next.autor);if(next.pagina&&next.pagina!=="1")params.set("pagina",next.pagina);
-  const qs=params.toString();return qs?"/biblioteca?"+qs:"/biblioteca";
+function categoryOrder(a:Category,b:Category){
+  return (a.sort_order??100)-(b.sort_order??100)||a.name.localeCompare(b.name,"pt-BR");
 }
-function paginationItems(current:number,total:number):(number|string)[]{
-  if(total<=7)return Array.from({length:total},(_,index)=>index+1);
-  const items:(number|string)[]=[1];const start=Math.max(2,current-2);const end=Math.min(total-1,current+2);
-  if(start>2)items.push("…");for(let page=start;page<=end;page++)items.push(page);if(end<total-1)items.push("…");items.push(total);return items;
+
+function hrefFor(opts:{q:string;categoria:string;pagina?:number}){
+  const p=new URLSearchParams();
+  if(opts.q)p.set("q",opts.q);
+  if(opts.categoria)p.set("categoria",opts.categoria);
+  if(opts.pagina&&opts.pagina>1)p.set("pagina",String(opts.pagina));
+  const s=p.toString();
+  return s?"/biblioteca?"+s:"/biblioteca";
 }
 
 export default async function LibraryPage({searchParams}:{searchParams:Promise<LibraryQuery>}){
   const {supabase,profile}=await requireApproved();
-  const isAdmin=profile.role==="admin";
-  const admin=createAdminSupabaseClient();
-  const {q="",categoria="",autor="",pagina="1",todos=""}=await searchParams;
+  const {q="",categoria="",pagina="1"}=await searchParams;
   const query=q.trim();
-  const authorFilter=autor.trim();
+  const page=Math.max(1,Number.parseInt(pagina,10)||1);
+
+  console.info("[biblioteca-classic-lite] start",{query,categoria,page});
 
   const categoryData=await catalogCategories(supabase);
-  const categories=((categoryData||[]) as Category[]).sort(categoryOrder);
-  const topLevelCategories=categories.filter(category=>!category.parent_id);
-  const selectedCategory=categories.find(c=>c.slug===categoria);
+  const categories=((categoryData||[]) as Category[]).filter(c=>!c.parent_id).sort(categoryOrder);
 
-  if(selectedCategory?.parent_id){
-    const parent=categories.find(category=>category.id===selectedCategory.parent_id);
-    if(parent)redirect("/biblioteca?categoria="+encodeURIComponent(parent.slug));
-  }
+  const result=await searchCatalog(supabase,{
+    search:query,
+    category:categoria,
+    page,
+    size:24,
+    sort:query||categoria?"title":"recent"
+  });
 
-  const filteredMode=Boolean(query||categoria||authorFilter||todos);
-  const parsedPage=Number.parseInt(pagina,10);
-  const requestedPage=Number.isFinite(parsedPage)&&parsedPage>0?parsedPage:1;
-  const pageSize=20;
+  console.info("[biblioteca-classic-lite] ok",{total:result.total,books:result.books.length});
 
-  console.info("[biblioteca-stable] loading",{filteredMode,query,categoria,authorFilter});
+  const featured=result.books.filter(b=>b.cover_url).slice(0,4);
+  const spotlight=result.books[0];
+  const totalPages=Math.max(1,Math.ceil(result.total/24));
+  const title=query?("Resultados para “"+query+"”"):(categoria?(categories.find(c=>c.slug===categoria)?.name||"Livros"):"Adicionados recentemente");
 
-  const totalBookCount=filteredMode?0:await catalogBookCount(admin);
-  const result=await searchCatalog(filteredMode?supabase:admin,filteredMode
-    ?{search:query,category:categoria,author:authorFilter,page:requestedPage,size:pageSize,sort:"title"}
-    :{size:12,sort:"recent"});
+  return <main className="lv-lite">
+    <header className="lv-lite-header">
+      <div className="lv-lite-header-inner">
+        <Link href="/biblioteca" className="lv-lite-brand">
+          <img src="/leituraverso-header-final.svg" alt="LeituraVerso"/>
+        </Link>
 
-  let authors:string[]=[];
-  if(filteredMode){
-    try{authors=await catalogAuthors(supabase);}
-    catch(error){console.warn("[biblioteca-stable] authors skipped",{message:error instanceof Error?error.message:String(error)});}
-  }
+        <nav className="lv-lite-nav">
+          <Link href="/biblioteca">Início</Link>
+          <a href="#novidades">Novidades</a>
+          <Link href="/ajuda">Ajuda</Link>
+          {profile.role==="admin"&&<Link href="/admin">Admin</Link>}
+        </nav>
 
-  console.info("[biblioteca-stable] ok",{total:result.total,books:result.books.length});
+        <form action="/biblioteca" method="get" className="lv-lite-search">
+          <input name="q" defaultValue={query} placeholder="Livro ou autor..."/>
+          {categoria&&<input type="hidden" name="categoria" value={categoria}/>}
+          <button type="submit">Pesquisar</button>
+        </form>
 
-  const totalBooks=filteredMode?result.total:totalBookCount;
-  const recent=filteredMode?[]:result.books;
-  const featured=recent.filter(book=>book.cover_url).slice(0,4);
-  const spotlight=recent[0];
-  const activeBase:LibraryQuery={q:query||undefined,categoria:categoria||undefined,autor:authorFilter||undefined,todos:todos||undefined};
-  const totalPages=Math.max(1,Math.ceil(result.total/pageSize));
-  const currentPage=result.page;
-  const pageItems=paginationItems(currentPage,totalPages);
+        <Link href="/pedido" className="lv-lite-request">Pedir livro</Link>
+      </div>
+    </header>
 
-  const filters=<div className="filter-panel-inner">
-    <div className="filter-block"><h3>Pesquisar</h3><CatalogSearchBox className="filter-search" placeholder="Título ou autor" initialValue={query}/></div>
-    <div className="filter-block"><h3>Categorias</h3><div className="filter-links"><Link className={!selectedCategory?"active":""} href={urlWith(activeBase,{categoria:"",pagina:""})}>Todas</Link>{topLevelCategories.map(category=><Link className={selectedCategory?.id===category.id?"active":""} key={category.id} href={urlWith(activeBase,{categoria:category.slug,pagina:""})}>{category.name}</Link>)}</div></div>
-    {authors.length>0&&<div className="filter-block"><h3>Autores</h3><div className="filter-links author-filter-links"><Link className={!authorFilter?"active":""} href={urlWith(activeBase,{autor:"",pagina:""})}>Todos</Link>{authors.slice(0,18).map(author=><Link className={norm(author)===norm(authorFilter)?"active":""} key={author} href={urlWith(activeBase,{autor:author,pagina:""})}>{author}</Link>)}</div></div>}
-    {(query||selectedCategory||authorFilter)&&<Link className="clear-filters" href="/biblioteca">Limpar filtros</Link>}
-  </div>;
-
-  return <AppShell><main className="library-home">
-    {!filteredMode&&<section className="editorial-hero">
-      <div className="shell-width editorial-hero-inner">
-        <div className="editorial-copy">
-          <span className="eyebrow">OLÁ, {profile.full_name?.split(" ")[0]?.toUpperCase()||"LEITOR"}</span>
+    {!query&&!categoria&&<section className="lv-lite-hero">
+      <div className="lv-lite-shell lv-lite-hero-grid">
+        <div className="lv-lite-hero-copy">
+          <span className="lv-lite-eyebrow">OLÁ, {(profile.full_name?.split(" ")[0]||profile.username||"LEITOR").toUpperCase()}</span>
           <h1>Histórias para todos<br/>os seus momentos.</h1>
-          <p>Explore o acervo, escolha seu próximo livro e baixe em PDF ou EPUB para ler no aplicativo que preferir.</p>
-          <CatalogSearchBox className="hero-search" placeholder="Qual livro você procura?"/>
-          <div className="hero-stats">
-            <div><RealtimeBookCount initialCount={totalBooks}/><span>livros disponíveis</span></div>
-            <div><strong>{topLevelCategories.length}</strong><span>categorias principais</span></div>
+          <p>Explore o acervo, escolha seu próximo livro e baixe em PDF ou EPUB para ler onde preferir.</p>
+
+          <form action="/biblioteca" method="get" className="lv-lite-hero-search">
+            <input name="q" placeholder="Qual livro você procura?"/>
+            <button type="submit">Buscar</button>
+          </form>
+
+          <div className="lv-lite-stats">
+            <div><strong>{result.total.toLocaleString("pt-BR")}</strong><span>livros no catálogo</span></div>
+            <div><strong>{categories.length}</strong><span>categorias principais</span></div>
           </div>
         </div>
-        <div className="cover-collage" aria-label="Livros em destaque">
-          {featured.map((book,index)=><Link href={"/livro/"+book.slug} className={"collage-book collage-"+(index+1)} key={book.id}>{book.cover_url&&<img src={book.cover_url} alt={"Capa de "+book.title}/>}</Link>)}
+
+        <div className="lv-lite-collage">
+          {featured.map((book,index)=><Link className={"lv-lite-cover lv-lite-cover-"+(index+1)} key={book.id} href={"/livro/"+book.slug}>
+            <img src={book.cover_url!} alt={"Capa de "+book.title}/>
+          </Link>)}
         </div>
       </div>
     </section>}
 
-    <div className="shell-width library-content">
-      {!filteredMode&&<nav className="category-strip" aria-label="Categorias">
-        <Link className="active" href="/biblioteca?todos=1">Todos os livros</Link>
-        {topLevelCategories.map(c=><Link href={"/biblioteca?categoria="+encodeURIComponent(c.slug)} key={c.id}>{c.name}</Link>)}
-      </nav>}
+    <div className="lv-lite-shell">
+      <div className="lv-lite-categories">
+        <Link className={!categoria?"active":""} href={hrefFor({q:query,categoria:""})}>Todos os livros</Link>
+        {categories.map(category=><Link className={categoria===category.slug?"active":""} key={category.id} href={hrefFor({q:query,categoria:category.slug})}>{category.name}</Link>)}
+      </div>
 
-      {!filteredMode&&recent.length>0&&<section id="novidades" className="library-section">
-        <div className="section-heading"><div><span className="eyebrow">NOVIDADES</span><h2>Adicionados recentemente</h2><p>Deslize para o lado para explorar os títulos mais novos.</p></div></div>
-        <HorizontalBookSlider>{recent.map(book=><BookCard key={book.id} book={book} isAdmin={isAdmin}/>)}</HorizontalBookSlider>
-      </section>}
-
-      {!filteredMode&&spotlight&&<section className="spotlight-section">
-        <div className="spotlight-card">
-          <div className="spotlight-cover">{spotlight.cover_url?<img src={spotlight.cover_url} alt={"Capa de "+spotlight.title}/>:<div className="cover-fallback">{spotlight.title}</div>}</div>
-          <div className="spotlight-copy">
-            <span className="eyebrow">DESTAQUE</span>
-            <h2>{spotlight.title}</h2>
-            <p className="spotlight-meta">{spotlight.categories?.name||"Livro"} • {spotlight.author}</p>
-            <strong>Sinopse:</strong><p>{excerpt(spotlight.description)}</p>
-            <Link className="spotlight-link" href={"/livro/"+spotlight.slug}>Conferir</Link>
+      <section id="novidades" className="lv-lite-section">
+        <div className="lv-lite-section-head">
+          <div>
+            <span className="lv-lite-eyebrow">{query||categoria?"CATÁLOGO":"NOVIDADES"}</span>
+            <h2>{title}</h2>
+            <p>{result.total.toLocaleString("pt-BR")} {result.total===1?"livro encontrado":"livros encontrados"}.</p>
           </div>
         </div>
-      </section>}
 
-      {filteredMode&&<div className="catalog-results-layout">
-        <aside className="catalog-filter-sidebar">{filters}</aside>
-        <section className="catalog-results-main">
-          <details className="mobile-filter-drawer"><summary>Filtros e categorias</summary>{filters}</details>
-          <div className="search-result-head"><BackToPrevious/><h1>{query?"Resultados para “"+query+"”":authorFilter?authorFilter:selectedCategory?.name||"Todos os livros"}</h1><p>{result.total} {result.total===1?"livro encontrado":"livros encontrados"}{selectedCategory?" em "+selectedCategory.name:""}{result.total>pageSize?" • página "+currentPage+" de "+totalPages:""}.</p></div>
-          {result.total?<><div className="book-grid shelf-grid search-books-grid">{result.books.map(book=><BookCard key={book.id} book={book} isAdmin={isAdmin}/>)}</div>{totalPages>1&&<nav className="catalog-pagination" aria-label="Paginação do acervo">{currentPage>1&&<Link className="pagination-arrow" href={urlWith(activeBase,{pagina:String(currentPage-1)})}>←</Link>}{pageItems.map((item,index)=>typeof item==="number"?<Link key={item} className={"pagination-page "+(item===currentPage?"active":"")} href={urlWith(activeBase,{pagina:String(item)})}>{item}</Link>:<span className="pagination-ellipsis" key={"ellipsis-"+index}>…</span>)}{currentPage<totalPages&&<Link className="pagination-arrow" href={urlWith(activeBase,{pagina:String(currentPage+1)})}>→</Link>}</nav>}</>:<div className="empty-state"><h3>Nenhum livro encontrado</h3><p>Tente outro título, autor ou categoria.</p><Link className="btn ghost" href="/biblioteca">Limpar busca</Link></div>}
-        </section>
-      </div>}
+        <div className="lv-lite-grid">
+          {result.books.map(book=><Link className="lv-lite-book" href={"/livro/"+book.slug} key={book.id}>
+            <div className="lv-lite-book-cover">
+              {book.cover_url?<img src={book.cover_url} alt={"Capa de "+book.title}/>:<span>{book.title}</span>}
+            </div>
+            <div className="lv-lite-book-copy">
+              <h3>{book.title}</h3>
+              <p>{book.author||"Autor não informado"}</p>
+              <span>{book.categories?.name||"Livro"}</span>
+            </div>
+          </Link>)}
+        </div>
+
+        {result.books.length===0&&<div className="lv-lite-empty">
+          <h3>Nenhum livro encontrado</h3>
+          <p>Tente outro título ou categoria.</p>
+        </div>}
+
+        {totalPages>1&&<nav className="lv-lite-pagination">
+          {page>1&&<Link href={hrefFor({q:query,categoria,pagina:page-1})}>← Anterior</Link>}
+          <span>Página {page} de {totalPages}</span>
+          {page<totalPages&&<Link href={hrefFor({q:query,categoria,pagina:page+1})}>Próxima →</Link>}
+        </nav>}
+      </section>
+
+      {!query&&!categoria&&spotlight&&<section className="lv-lite-spotlight">
+        <div className="lv-lite-spotlight-cover">
+          {spotlight.cover_url?<img src={spotlight.cover_url} alt={"Capa de "+spotlight.title}/>:<span>{spotlight.title}</span>}
+        </div>
+        <div className="lv-lite-spotlight-copy">
+          <span className="lv-lite-eyebrow">DESTAQUE</span>
+          <h2>{spotlight.title}</h2>
+          <p className="meta">{spotlight.categories?.name||"Livro"} · {spotlight.author||"Autor não informado"}</p>
+          <p>{(spotlight.description||"Sinopse não informada.").slice(0,300)}{(spotlight.description||"").length>300?"…":""}</p>
+          <Link href={"/livro/"+spotlight.slug}>Conferir livro</Link>
+        </div>
+      </section>}
     </div>
-  </main></AppShell>;
+  </main>;
 }
