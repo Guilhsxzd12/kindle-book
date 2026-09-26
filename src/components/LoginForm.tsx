@@ -7,33 +7,100 @@ function safeNext(value?:string){return value&&value.startsWith("/")&&!value.sta
 type ContactMode="access"|"password"|null;
 
 export function LoginForm({next,created=false}:{next?:string;created?:boolean}){
-  const [loading,setLoading]=useState(false);const [message,setMessage]=useState("");const [contactMode,setContactMode]=useState<ContactMode>(null);const router=useRouter();
+  const [loading,setLoading]=useState(false);
+  const [message,setMessage]=useState("");
+  const [contactMode,setContactMode]=useState<ContactMode>(null);
+  const [showPassword,setShowPassword]=useState(false);
+  const router=useRouter();
+
   async function submit(formData:FormData){
-    setLoading(true);setMessage("");const identifier=String(formData.get("identifier")||"").trim();const password=String(formData.get("password")||"");
+    setLoading(true);
+    setMessage("");
+    const identifier=String(formData.get("identifier")||"").trim();
+    const password=String(formData.get("password")||"");
     try{
       const response=await fetch("/api/auth/login",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({identifier,password})});
-      const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||"Não foi possível entrar.");
-      router.replace(safeNext(next));router.refresh();
-    }catch(error){setMessage(error instanceof Error?error.message:"Usuário ou senha incorretos.");}finally{setLoading(false);}
+      const data=await response.json().catch(()=>({}));
+      if(!response.ok)throw new Error(data.error||"Não foi possível entrar.");
+      router.replace(safeNext(next));
+      router.refresh();
+    }catch(error){
+      setMessage(error instanceof Error?error.message:"Usuário ou senha incorretos.");
+    }finally{
+      setLoading(false);
+    }
   }
+
   const contactTitle=contactMode==="password"?"Recuperar acesso":"Comprar acesso";
   const contactText=contactMode==="password"?"Escolha onde prefere falar para recuperar sua senha.":"Escolha onde prefere falar para comprar seu acesso ao LeituraVerso.";
-  return <div className="oda-login-shell">
-    <div className="oda-login-brand"><img src="/leituraverso-footer-final.svg" alt="LEITURAVERSO"/></div>
-    <section className="oda-login-card">
-      <div className="oda-login-intro"><h1>Bem-vindo!</h1><p>Recebeu um código de acesso? <a className="oda-inline-link" href="/criar-conta">Crie seu usuário aqui</a>.</p><p>Caso já possua cadastro, faça o login abaixo.</p></div>
-      <form className="oda-login-form" action={submit}>
-        <label>Nome de usuário<input type="text" name="identifier" placeholder="Seu usuário" autoComplete="username" required/></label>
-        <label>Senha<input type="password" name="password" placeholder="Senha" minLength={6} autoComplete="current-password" required/></label>
-        <label className="oda-remember"><input type="checkbox" name="remember" defaultChecked/><span>Lembre de mim</span></label>
-        <button className="oda-login-submit" disabled={loading}>{loading?"Entrando...":"Entrar"}</button>
-      </form>
-      {created&&<div className="notice success">Conta criada com sucesso. Entre com seu nome de usuário e senha.</div>}{message&&<p className="oda-login-error">{message}</p>}
-      <div className="oda-login-divider"><span/>ou<span/></div>
-      <a className="oda-register-button" href="/criar-conta">Criar usuário com código</a>
-      <p className="oda-forgot">Ainda não tem acesso? <button type="button" className="oda-inline-link" onClick={()=>setContactMode("access")}>Fale com o atendimento</button>. Esqueceu sua senha? Recupere-a <button type="button" className="oda-inline-link" onClick={()=>setContactMode("password")}>aqui</button>.</p>
+
+  return <div className="auth-shell">
+    <section className="auth-card">
+      <div className="auth-form-panel">
+        <a className="auth-brand" href="/" aria-label="LeituraVerso">
+          <img src="/leituraverso-footer-final.svg" alt="LEITURAVERSO"/>
+        </a>
+
+        <div className="auth-heading">
+          <span className="auth-kicker">SUA BIBLIOTECA DIGITAL</span>
+          <h1>Bem-vindo ao LeituraVerso</h1>
+          <p>Entre com seu usuário e senha para acessar sua biblioteca digital.</p>
+        </div>
+
+        <form className="auth-form" action={submit}>
+          <label className="auth-field">
+            <span>Nome de usuário</span>
+            <div className="auth-input-wrap">
+              <span className="auth-input-icon" aria-hidden="true">⌁</span>
+              <input type="text" name="identifier" placeholder="Seu usuário" autoComplete="username" required/>
+            </div>
+          </label>
+
+          <label className="auth-field">
+            <span>Senha</span>
+            <div className="auth-input-wrap">
+              <span className="auth-input-icon" aria-hidden="true">••</span>
+              <input type={showPassword?"text":"password"} name="password" placeholder="Sua senha" minLength={6} autoComplete="current-password" required/>
+              <button type="button" className="auth-eye" onClick={()=>setShowPassword(value=>!value)} aria-label={showPassword?"Ocultar senha":"Mostrar senha"}>{showPassword?"Ocultar":"Mostrar"}</button>
+            </div>
+          </label>
+
+          <div className="auth-row">
+            <label className="auth-remember"><input type="checkbox" name="remember" defaultChecked/><span>Lembre de mim</span></label>
+            <button type="button" className="auth-text-button" onClick={()=>setContactMode("password")}>Esqueceu sua senha?</button>
+          </div>
+
+          <button className="auth-primary" disabled={loading}>{loading?"Entrando...":"Entrar"}</button>
+        </form>
+
+        {created&&<div className="auth-success">Conta criada com sucesso. Entre com seu nome de usuário e senha.</div>}
+        {message&&<p className="auth-error">{message}</p>}
+
+        <div className="auth-divider"><span/><b>ou</b><span/></div>
+        <a className="auth-secondary" href="/criar-conta">Criar usuário com código</a>
+
+        <p className="auth-help">Ainda não tem acesso? <button type="button" onClick={()=>setContactMode("access")}>Fale com o atendimento</button>.</p>
+        <p className="auth-footnote">LEITURAVERSO · sua biblioteca digital</p>
+      </div>
+
+      <aside className="auth-visual" aria-hidden="true">
+        <div className="auth-visual-glow auth-glow-a"/>
+        <div className="auth-visual-glow auth-glow-b"/>
+        <div className="auth-book-shape auth-book-1"/>
+        <div className="auth-book-shape auth-book-2"/>
+        <div className="auth-book-shape auth-book-3"/>
+        <div className="auth-visual-content">
+          <span className="auth-visual-chip">LEITURAVERSO</span>
+          <h2>Sua biblioteca, do seu jeito.</h2>
+          <p>Acesse seu acervo de e-books em PDF e EPUB com organização, praticidade e uma experiência feita para leitura.</p>
+          <div className="auth-visual-stats">
+            <div><strong>PDF</strong><span>e-books</span></div>
+            <div><strong>EPUB</strong><span>Kindle</span></div>
+            <div><strong>24h</strong><span>acesso</span></div>
+          </div>
+        </div>
+      </aside>
     </section>
-    <p className="oda-login-footer">LEITURAVERSO · sua biblioteca digital</p>
 
     {contactMode&&<div className="oda-contact-backdrop" role="presentation" onClick={()=>setContactMode(null)}>
       <div className="oda-contact-modal" role="dialog" aria-modal="true" aria-labelledby="contact-title" onClick={e=>e.stopPropagation()}>
