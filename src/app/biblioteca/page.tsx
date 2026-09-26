@@ -54,39 +54,47 @@ export default async function LibraryPage({searchParams}:{searchParams:Promise<L
   const requestedPage=Number.isFinite(parsedPage)&&parsedPage>0?parsedPage:1;
   const pageSize=20;
 
-  const totalBookCountPromise=filteredMode?Promise.resolve(0):catalogBookCount(admin);
-  const resultPromise=searchCatalog(filteredMode?supabase:admin,filteredMode
+  console.info("[biblioteca] loading catalog");
+  const totalBookCountResult=filteredMode?0:await catalogBookCount(admin);
+
+  const result=await searchCatalog(filteredMode?supabase:admin,filteredMode
     ?{search:query,category:categoria,author:authorFilter,page:categoryHubMode?1:requestedPage,size:categoryHubMode?30:pageSize,sort:"title"}
     :{size:12,sort:"recent"});
-  const popularPromise=filteredMode?Promise.resolve(null):searchCatalog(admin,{size:12,sort:"popular"});
-  const accessedPromise=filteredMode?Promise.resolve(null):searchCatalog(admin,{size:12,sort:"views"});
-  const homeShelvesPromise=filteredMode?Promise.resolve({} as CatalogShelfMap):catalogShelves(admin,"",12);
-  const childResultsPromise=categoryHubMode&&childCategories.length
-    ?Promise.all(childCategories.map(async category=>{
-      const childResult=await searchCatalog(supabase,{category:category.slug,page:1,size:30,sort:"title"});
-      return {category,books:childResult.books,total:childResult.total};
-    }))
-    :Promise.resolve([]);
 
-  let totalBookCountResult,result,popularResult,accessedResult,shelves,childResults;
-  try {
-    console.info("[biblioteca] loading catalog");
-    [totalBookCountResult,result,popularResult,accessedResult,shelves,childResults]=await Promise.all([
-      totalBookCountPromise,resultPromise,popularPromise,accessedPromise,homeShelvesPromise,childResultsPromise
-    ]);
-    console.info("[biblioteca] catalog ok", {
-      total: result?.total,
-      recent: result?.books?.length,
-      popular: popularResult?.books?.length,
-      accessed: accessedResult?.books?.length
-    });
-  } catch (error) {
-    console.error("[biblioteca] catalog failed", {
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
-    });
-    throw error;
+  let popularResult:null|Awaited<ReturnType<typeof searchCatalog>>=null;
+  let accessedResult:null|Awaited<ReturnType<typeof searchCatalog>>=null;
+  let shelves={} as CatalogShelfMap;
+  const childResults:{category:Category;books:Awaited<ReturnType<typeof searchCatalog>>["books"];total:number}[]=[];
+
+  if(!filteredMode){
+    try{popularResult=await searchCatalog(admin,{size:12,sort:"popular"});}
+    catch(error){console.warn("[biblioteca] popular skipped",{message:error instanceof Error?error.message:String(error)});}
+
+    try{accessedResult=await searchCatalog(admin,{size:12,sort:"views"});}
+    catch(error){console.warn("[biblioteca] views skipped",{message:error instanceof Error?error.message:String(error)});}
+
+    try{shelves=await catalogShelves(admin,"",12);}
+    catch(error){console.warn("[biblioteca] shelves skipped",{message:error instanceof Error?error.message:String(error)});}
   }
+
+  if(categoryHubMode&&childCategories.length){
+    for(const category of childCategories){
+      try{
+        const childResult=await searchCatalog(supabase,{category:category.slug,page:1,size:30,sort:"title"});
+        childResults.push({category,books:childResult.books,total:childResult.total});
+      }catch(error){
+        console.warn("[biblioteca] child category skipped",{category:category.slug,message:error instanceof Error?error.message:String(error)});
+      }
+    }
+  }
+
+  console.info("[biblioteca] catalog ok",{
+    total:result.total,
+    recent:result.books.length,
+    popular:popularResult?.books?.length||0,
+    accessed:accessedResult?.books?.length||0,
+    shelves:Object.keys(shelves).length
+  });
 
   const totalBooks=filteredMode?result.total:totalBookCountResult;
   const recent=filteredMode?[]:result.books;
