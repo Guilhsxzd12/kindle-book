@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { catalogAuthors,catalogCategories } from "@/lib/catalog";
+import { catalogCategories } from "@/lib/catalog";
 import { redirect } from "next/navigation";
 import { getViewer,requireApproved } from "@/lib/auth";
 import { AccountMenu } from "@/components/AccountMenu";
@@ -24,16 +24,11 @@ export async function AppShell({children,allowInactive=false}:{children:React.Re
   if(!viewer.user)redirect("/login");
   if(!viewer.profile)redirect("/aguardando-aprovacao");
   const profile=viewer.profile as Profile;const supabase=viewer.supabase;const admin=profile.role==="admin";
-  const [categoryData,authorData]=await Promise.all([
-    catalogCategories(supabase),
-    catalogAuthors(supabase)
-  ]);
+  const categoryData=await catalogCategories(supabase);
   const allCategories=(categoryData||[]) as Category[];
   const categories=allCategories.filter(category=>!category.parent_id);
-  const authors=authorData.slice(0,18);
 
   const categoryLinks=categories.map(category=><Link key={category.id} href={`/biblioteca?categoria=${encodeURIComponent(category.slug)}`}>{category.name}</Link>);
-  const authorLinks=authors.map(author=><Link key={author} href={`/biblioteca?autor=${encodeURIComponent(author)}`}>{author}</Link>);
 
   return <div className="app-shell">
     <NavigationProgress/>
@@ -46,10 +41,6 @@ export async function AppShell({children,allowInactive=false}:{children:React.Re
           <div className="nav-dropdown capsule-dropdown">
             <button className="capsule-dropdown-trigger" type="button" aria-haspopup="true">Categorias <Icon name="chevron"/></button>
             <div className="nav-dropdown-menu capsule-dropdown-menu categories-menu"><span className="dropdown-kicker">Explore por categoria</span><div className="dropdown-link-grid">{categoryLinks}</div><Link className="dropdown-see-all" href="/biblioteca">Ver todo o acervo →</Link></div>
-          </div>
-          <div className="nav-dropdown capsule-dropdown">
-            <button className="capsule-dropdown-trigger" type="button" aria-haspopup="true">Autores <Icon name="chevron"/></button>
-            <div className="nav-dropdown-menu capsule-dropdown-menu authors-menu"><span className="dropdown-kicker">Autores do acervo</span><div className="dropdown-link-grid">{authorLinks}</div><Link className="dropdown-see-all" href="/biblioteca">Ver todos os livros →</Link></div>
           </div>
           <Link href="/biblioteca#novidades">Novidades</Link>
           <Link href="/ajuda">Ajuda</Link>
@@ -68,7 +59,6 @@ export async function AppShell({children,allowInactive=false}:{children:React.Re
             <nav aria-label="Menu móvel">
               <Link href="/biblioteca">Início</Link>
               <details className="mobile-menu-group"><summary>Categorias <Icon name="chevron"/></summary><div>{categoryLinks}</div></details>
-              <details className="mobile-menu-group"><summary>Autores <Icon name="chevron"/></summary><div>{authorLinks}</div></details>
               <Link href="/biblioteca#novidades">Novidades</Link>
               <Link href="/ajuda">Ajuda</Link>
               {admin&&<Link href="/admin">Admin</Link>}
