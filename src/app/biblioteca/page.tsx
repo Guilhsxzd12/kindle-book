@@ -68,9 +68,25 @@ export default async function LibraryPage({searchParams}:{searchParams:Promise<L
     }))
     :Promise.resolve([]);
 
-  const [totalBookCountResult,result,popularResult,accessedResult,shelves,childResults]=await Promise.all([
-    totalBookCountPromise,resultPromise,popularPromise,accessedPromise,homeShelvesPromise,childResultsPromise
-  ]);
+  let totalBookCountResult,result,popularResult,accessedResult,shelves,childResults;
+  try {
+    console.info("[biblioteca] loading catalog");
+    [totalBookCountResult,result,popularResult,accessedResult,shelves,childResults]=await Promise.all([
+      totalBookCountPromise,resultPromise,popularPromise,accessedPromise,homeShelvesPromise,childResultsPromise
+    ]);
+    console.info("[biblioteca] catalog ok", {
+      total: result?.total,
+      recent: result?.books?.length,
+      popular: popularResult?.books?.length,
+      accessed: accessedResult?.books?.length
+    });
+  } catch (error) {
+    console.error("[biblioteca] catalog failed", {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    throw error;
+  }
 
   const totalBooks=filteredMode?result.total:totalBookCountResult;
   const recent=filteredMode?[]:result.books;
